@@ -28,3 +28,13 @@ Thumbs.db
 
 # Test coverage
 coverage
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Vite config compiled artifacts (only keep .ts source)
+vite.config.js
+vite.config.d.ts
+
+# Internal dev spec (not for open-source release)
+todo-calendar-dev-spec.html
