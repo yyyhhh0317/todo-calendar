@@ -1,0 +1,140 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/InstrumentSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/InstrumentSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: theme('fontFamily.sans');
+    color: theme('colors.ink.DEFAULT');
+    background:
+      radial-gradient(circle at 8% 8%, rgba(108, 92, 231, 0.1), transparent 30rem),
+      radial-gradient(circle at 92% 12%, rgba(0, 184, 148, 0.09), transparent 28rem),
+      radial-gradient(circle at 42% 90%, rgba(253, 121, 168, 0.07), transparent 30rem),
+      theme('colors.canvas');
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* 玻璃拟态面板 - 与 spec 中的 .panel 一致 */
+  .glass-panel {
+    @apply border border-brand-200/40 rounded-4xl shadow-glass backdrop-blur-glass;
+    background: rgba(255, 255, 255, 0.74);
+  }
+
+  /* 段落卡片 */
+  .section-card {
+    @apply glass-panel p-5;
+  }
+
+  /* 任务卡基础样式 */
+  .task-chip {
+    @apply bg-white border border-brand-200/40 rounded-2xl p-3 shadow-card transition-all duration-200;
+  }
+
+  .task-chip:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+
+  .task-chip.important {
+    @apply border-danger-300/70 shadow-important;
+  }
+
+  .task-chip.completed {
+    @apply border-success-300/60;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(0, 168, 107, 0.12));
+  }
+
+  .task-chip.starred {
+    @apply border-star-300/70 shadow-starred;
+  }
+
+  /* 已安排任务块 */
+  .placed-task {
+    @apply text-white rounded-xl px-2 py-1 text-xs leading-tight shadow-task;
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.86), rgba(0, 184, 148, 0.78));
+  }
+}
+
+@layer utilities {
+  /* 自定义滚动条 */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(108, 92, 231, 0.3) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(108, 92, 231, 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(108, 92, 231, 0.5);
+  }
+
+  /* 文本截断 */
+  .text-balance {
+    text-wrap: balance;
+  }
+}
