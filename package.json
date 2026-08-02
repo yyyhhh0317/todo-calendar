@@ -4,13 +4,13 @@
   "type": "module",
   "description": "精美 TODO 时间安排 Web 应用 - 把传统 TODO List 和时间表结合起来的轻量项目计划工具",
   "license": "MIT",
-  "homepage": "https://github.com/your-github-username/todo-calendar",
+  "homepage": "https://github.com/yyyhhh0317/todo-calendar",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-github-username/todo-calendar.git"
+    "url": "https://github.com/yyyhhh0317/todo-calendar.git"
   },
   "bugs": {
-    "url": "https://github.com/your-github-username/todo-calendar/issues"
+    "url": "https://github.com/yyyhhh0317/todo-calendar/issues"
   },
   "keywords": [
     "todo",
