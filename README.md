@@ -12,7 +12,7 @@ A lightweight planner that fuses a classic TODO list with a time-table.
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
-**[✨ 在线 Demo](#在线-demo) · [📖 文档](#核心特性) · [🤝 参与贡献](#参与贡献) · [🛣 路线图](#后续路线图)**
+**[✨ 在线 Demo](https://yyyhhh0317.github.io/todo-calendar) · [📖 文档](#核心特性) · [🤝 参与贡献](#参与贡献) · [🛣 路线图](#后续路线图)**
 
 [English](README.en.md) · **简体中文**
 
@@ -183,9 +183,9 @@ src/
 
 ## 在线 Demo
 
-> 🚧 在线 Demo 部署中，敬请期待。
+👉 **[https://yyyhhh0317.github.io/todo-calendar](https://yyyhhh0317.github.io/todo-calendar)**
 
-计划部署到 Vercel，部署后会在本节放上链接。
+基于 GitHub Pages 自动部署，每次推送到 main 分支会自动更新。
 
 ---
 
