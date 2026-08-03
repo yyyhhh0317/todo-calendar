@@ -45,32 +45,21 @@ function loadInitialSessions(): TimerSession[] {
   // 旧数据兼容：补全 accountedMinutes 默认值
   return raw.map((s) => ({
     ...s,
-    accountedMinutes: (s as TimerSession & { accountedMinutes?: number }).accountedMinutes ?? 0,
+    accountedMinutes: s.accountedMinutes ?? 0,
   }))
 }
 
 /** 从 useTaskStore 同步注入的累加函数（在 store 初始化后调用 setMinutesSpentSync 绑定） */
 let minutesSpentSync: ((taskId: string, minutes: number) => void) | null = null
-let stopActiveTimer: ((taskId: string) => void) | null = null
 
 /** 外部绑定：计时器 → 任务用时 的同步回调 */
 export function setMinutesSpentSync(fn: (taskId: string, minutes: number) => void) {
   minutesSpentSync = fn
 }
 
-/** 外部绑定：完成任务时要求计时器停止关联计时 */
-export function setActiveTaskTimerStopper(fn: (taskId: string) => void) {
-  stopActiveTimer = fn
-}
-
-/** 通知计时器：某任务将被完成，请结算其会话用时。返回应追加的分钟数（秒向上取整） */
-export function settleActiveTimerForTask(taskId: string): number {
-  if (!stopActiveTimer) return 0
-  return useTimerStore.getState().settleTimerForTask(taskId)
-}
-
-/** 把秒转成分钟（向上取整到 1 分钟） */
+/** 把秒转成分钟（向上取整，0 秒不计费） */
 function secondsToMinutes(sec: number): number {
+  if (sec <= 0) return 0
   return Math.max(1, Math.ceil(sec / 60))
 }
 
@@ -86,12 +75,12 @@ export const useTimerStore = create<TimerState>((set, get) => {
    */
   const billElapsedToTask = (session: TimerSession) => {
     if (!session.taskId) return session
-    const prev = (session as TimerSession & { accountedMinutes?: number }).accountedMinutes ?? 0
+    const prev = session.accountedMinutes ?? 0
     const totalMins = secondsToMinutes(session.elapsedSeconds)
     const delta = totalMins - prev
     if (delta <= 0) return session
     if (minutesSpentSync) minutesSpentSync(session.taskId, delta)
-    return { ...session, accountedMinutes: totalMins } as TimerSession
+    return { ...session, accountedMinutes: totalMins }
   }
 
   return {
@@ -219,22 +208,22 @@ export const useTimerStore = create<TimerState>((set, get) => {
       const active = timerSessions.find((t) => t.id === activeTimerId)
       if (!active || active.taskId !== taskId) return 0
 
-      // 先按当前 elapsedSeconds 结账
-      const billed = billElapsedToTask(active)
-      const total =
-        (billed as TimerSession & { accountedMinutes?: number }).accountedMinutes ??
-        secondsToMinutes(active.elapsedSeconds)
+      // 计算未计费的增量分钟数（不通过 sync 回调加费，由 completeTask 统一写入，避免双重计费）
+      const prev = active.accountedMinutes ?? 0
+      const totalMins = secondsToMinutes(active.elapsedSeconds)
+      const delta = Math.max(0, totalMins - prev)
+
       // 结束该会话
       set((s) => ({
         timerSessions: s.timerSessions.map((t) =>
           t.id === activeTimerId
-            ? { ...billed, status: 'finished' as TimerStatus, finishedAt: new Date().toISOString() }
+            ? { ...t, status: 'finished' as TimerStatus, finishedAt: new Date().toISOString(), accountedMinutes: totalMins }
             : t,
         ),
         activeTimerId: null,
       }))
       persist()
-      return total
+      return delta
     },
   }
 })

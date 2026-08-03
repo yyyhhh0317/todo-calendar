@@ -40,8 +40,7 @@ function formatElapsedHMS(totalSeconds: number): string {
 
 export function TaskCard({ task, blocks, entries, compact = false }: TaskCardProps) {
   const { toggleTaskStar, completeTask, uncompleteTask, deleteTask, splitTask } = useTaskStore()
-  const timers = useTimerStore()
-  const { startTimer, pauseTimer, resumeTimer, activeTimerId, timerSessions } = timers
+  const { startTimer, pauseTimer, resumeTimer, activeTimerId, timerSessions } = useTimerStore()
   const [splitEditorOpen, setSplitEditorOpen] = useState(false)
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -80,22 +79,16 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
     startTimer({ mode: 'stopwatch', taskId: task.id })
   }
 
-  // 点击完成：1) 如果有该任务的活跃计时器 → 结账  2) completeTask 带累计用时  3) 排期会自动在 completeTask 中清理
+  // 点击完成：1) 如果有该任务的活跃计时器 → 结账（返回未计费增量）  2) completeTask 带增量统一写入  3) 排期自动清理
   const handleCompleteTask = () => {
     if (isDone) {
       uncompleteTask(task.id)
       return
     }
-    let extra = 0
-    if (hasActiveTimer) {
-      // 结算活跃计时器：先把 elapsedSeconds 全部入钟
-      const accountedPrev = activeTimer?.accountedMinutes ?? 0
-      const total = Math.max(1, Math.ceil((activeTimer?.elapsedSeconds ?? 0) / 60))
-      extra = Math.max(0, total - accountedPrev)
-      // 停掉会话：走 settleTimerForTask 直接在 store 层结束
-      const settled = useTimerStore.getState().settleTimerForTask(task.id)
-      if (settled > extra) extra = settled
-    }
+    // settleTimerForTask 结束会话并返回未计费的增量分钟数（不通过 sync 加费，避免双重计费）
+    const extra = hasActiveTimer
+      ? useTimerStore.getState().settleTimerForTask(task.id)
+      : 0
     completeTask(task.id, extra)
   }
 
