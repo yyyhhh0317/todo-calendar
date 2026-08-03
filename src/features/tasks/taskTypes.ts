@@ -31,6 +31,8 @@ export interface Task {
   completedAt?: string
   /** YYYY-MM-DD，用于判断历史日期展示 */
   completedDate?: string
+  /** 实际累计花费分钟数（由计时器累积） */
+  totalMinutesSpent: number
   createdAt: string
   updatedAt: string
 }

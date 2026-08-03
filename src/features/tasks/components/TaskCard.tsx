@@ -29,9 +29,19 @@ interface TaskCardProps {
   compact?: boolean
 }
 
+function formatElapsedHMS(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = Math.floor(totalSeconds % 60)
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`
+  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`
+  return `${s}s`
+}
+
 export function TaskCard({ task, blocks, entries, compact = false }: TaskCardProps) {
   const { toggleTaskStar, completeTask, uncompleteTask, deleteTask, splitTask } = useTaskStore()
-  const { startTimer, activeTimerId } = useTimerStore()
+  const timers = useTimerStore()
+  const { startTimer, pauseTimer, resumeTimer, activeTimerId, timerSessions } = timers
   const [splitEditorOpen, setSplitEditorOpen] = useState(false)
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -48,7 +58,14 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
   const isImportant = task.importance !== 'normal'
   const totalScheduled = blocks.filter((b) => b.status === 'scheduled' || b.status === 'done').length
   const totalDuration = blocks.reduce((sum, b) => sum + b.durationMinutes, 0)
-  const isTimerRunning = !!activeTimerId
+
+  // 当前任务是否是活跃计时器的关联任务
+  const activeTimer = timerSessions.find((t) => t.id === activeTimerId) ?? null
+  const hasActiveTimer = activeTimer?.taskId === task.id
+  const isTimerRunningGlobally = !!activeTimer && activeTimer.status === 'running'
+  const isTimerRunningHere = hasActiveTimer && activeTimer.status === 'running'
+  const isTimerPausedHere = hasActiveTimer && activeTimer.status === 'paused'
+  const elapsed = activeTimer?.elapsedSeconds ?? 0
 
   const cardClass = cn(
     'task-chip',
@@ -59,8 +76,27 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
   )
 
   const handleStartTimer = () => {
-    if (isTimerRunning) return
+    if (isTimerRunningGlobally) return
     startTimer({ mode: 'stopwatch', taskId: task.id })
+  }
+
+  // 点击完成：1) 如果有该任务的活跃计时器 → 结账  2) completeTask 带累计用时  3) 排期会自动在 completeTask 中清理
+  const handleCompleteTask = () => {
+    if (isDone) {
+      uncompleteTask(task.id)
+      return
+    }
+    let extra = 0
+    if (hasActiveTimer) {
+      // 结算活跃计时器：先把 elapsedSeconds 全部入钟
+      const accountedPrev = activeTimer?.accountedMinutes ?? 0
+      const total = Math.max(1, Math.ceil((activeTimer?.elapsedSeconds ?? 0) / 60))
+      extra = Math.max(0, total - accountedPrev)
+      // 停掉会话：走 settleTimerForTask 直接在 store 层结束
+      const settled = useTimerStore.getState().settleTimerForTask(task.id)
+      if (settled > extra) extra = settled
+    }
+    completeTask(task.id, extra)
   }
 
   return (
@@ -102,9 +138,19 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
           </div>
         )}
 
-        {/* 元信息 */}
+        {/* 元信息 + 累计用时 */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 text-[11px] text-ink-muted">
-          <span className="font-mono">{formatDuration(totalDuration)}</span>
+          <span className="font-mono">
+            预估 {formatDuration(totalDuration)}
+          </span>
+          {(task.totalMinutesSpent ?? 0) > 0 && (
+            <span className={cn(
+              'font-mono',
+              task.totalMinutesSpent >= task.estimatedMinutes ? 'text-danger-600' : 'text-accent-600',
+            )}>
+              · 实际 {formatDuration(task.totalMinutesSpent)}
+            </span>
+          )}
           {blocks.length > 1 && (
             <span className="inline-flex items-center gap-0.5">
               <SplitIcon size={11} />
@@ -118,15 +164,40 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
             </span>
           )}
         </div>
+
+        {/* 活跃计时器显示条：当该任务有活跃计时器时显示 */}
+        {hasActiveTimer && !isDone && (
+          <div
+            className={cn(
+              'mt-2 flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg font-mono text-[11px] tabular-nums',
+              isTimerRunningHere ? 'bg-accent-50 text-accent-700 border border-accent-200 animate-pulse-soft'
+                : 'bg-brand-50 text-brand-700 border border-brand-200',
+            )}
+          >
+            <span className="flex items-center gap-1 font-semibold">
+              <span
+                className={cn(
+                  'inline-block w-2 h-2 rounded-full',
+                  isTimerRunningHere ? 'bg-accent-500 animate-ping-soft' : 'bg-brand-400',
+                )}
+              />
+              {isTimerRunningHere ? '计时中' : isTimerPausedHere ? '已暂停' : '会话'}
+            </span>
+            <span className="text-base font-bold tracking-tight tabular-nums">
+              {formatElapsedHMS(elapsed)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-brand-200/20">
+      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-brand-200/20 flex-wrap">
         <Button
           variant={isDone ? 'secondary' : 'primary'}
           size="sm"
-          onClick={() => (isDone ? uncompleteTask(task.id) : completeTask(task.id))}
+          onClick={handleCompleteTask}
           className="!h-7 !px-2.5"
+          title={isDone ? '撤销完成' : '完成该任务（自动移除排期并记录累计用时）'}
         >
           <CheckIcon size={13} />
           {isDone ? '已完成' : '完成'}
@@ -153,19 +224,53 @@ export function TaskCard({ task, blocks, entries, compact = false }: TaskCardPro
           <SplitIcon size={13} />
         </Button>
 
+        {/* 计时器控制：开始 / 暂停 / 恢复 */}
         {!isDone && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="!h-7 !w-7"
-            onClick={handleStartTimer}
-            title={isTimerRunning ? '已有计时器运行中' : '开始专注计时'}
-            disabled={isTimerRunning}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="6 3 20 12 6 21 6 3" />
-            </svg>
-          </Button>
+          <>
+            {!hasActiveTimer ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="!h-7 !w-7"
+                onClick={handleStartTimer}
+                title={isTimerRunningGlobally ? '其他任务计时中' : '开始专注计时'}
+                disabled={isTimerRunningGlobally}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="6 3 20 12 6 21 6 3" />
+                </svg>
+              </Button>
+            ) : (
+              <>
+                {isTimerRunningHere ? (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="!h-7 !w-7"
+                    onClick={pauseTimer}
+                    title="暂停计时"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="!h-7 !w-7 text-accent-600"
+                    onClick={resumeTimer}
+                    title="恢复计时"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
+                  </Button>
+                )}
+              </>
+            )}
+          </>
         )}
 
         <Button

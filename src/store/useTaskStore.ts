@@ -31,8 +31,10 @@ interface TaskState {
   updateTask: (id: string, patch: Partial<Task>) => void
   deleteTask: (id: string) => void
   toggleTaskStar: (id: string) => void
-  completeTask: (id: string) => void
+  completeTask: (id: string, extraMinutesSpent?: number) => void
   uncompleteTask: (id: string) => void
+  /** 累加任务实际用时（由计时器在暂停/结束时调用） */
+  addMinutesSpent: (taskId: string, minutes: number) => void
 
   // 任务块
   splitTask: (taskId: string, blockCount: number) => void
@@ -98,6 +100,7 @@ export const useTaskStore = create<TaskState>((set, get) => {
         targetAt: input.targetAt,
         isStarred: false,
         status: 'todo',
+        totalMinutesSpent: 0,
         createdAt: now,
         updatedAt: now,
       }
@@ -150,19 +153,43 @@ export const useTaskStore = create<TaskState>((set, get) => {
       persist()
     },
 
-    completeTask: (id) => {
+    completeTask: (id, extraMinutesSpent) => {
       const now = new Date().toISOString()
       const today = now.slice(0, 10)
+      set((s) => {
+        const blockIds = s.taskBlocks.filter((b) => b.taskId === id).map((b) => b.id)
+        return {
+          tasks: s.tasks.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  status: 'done',
+                  completedAt: now,
+                  completedDate: today,
+                  totalMinutesSpent: t.totalMinutesSpent + (extraMinutesSpent ?? 0),
+                  updatedAt: now,
+                }
+              : t,
+          ),
+          taskBlocks: s.taskBlocks.map((b) =>
+            b.taskId === id
+              ? { ...b, status: 'done', completedAt: now, completedDate: today }
+              : b,
+          ),
+          // 完成任务时自动移除所有排期：左侧时间格不再占位
+          scheduleEntries: s.scheduleEntries.filter((e) => !blockIds.includes(e.blockId)),
+        }
+      })
+      persist()
+    },
+
+    addMinutesSpent: (taskId, minutes) => {
+      if (minutes <= 0) return
       set((s) => ({
         tasks: s.tasks.map((t) =>
-          t.id === id
-            ? { ...t, status: 'done', completedAt: now, completedDate: today, updatedAt: now }
+          t.id === taskId
+            ? { ...t, totalMinutesSpent: t.totalMinutesSpent + minutes, updatedAt: new Date().toISOString() }
             : t,
-        ),
-        taskBlocks: s.taskBlocks.map((b) =>
-          b.taskId === id
-            ? { ...b, status: 'done', completedAt: now, completedDate: today }
-            : b,
         ),
       }))
       persist()

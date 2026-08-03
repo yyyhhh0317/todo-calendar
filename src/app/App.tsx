@@ -12,6 +12,7 @@ import { TimerPanel } from '@/features/focus/components/TimerPanel'
 import { MiniTimerBar } from '@/features/focus/components/MiniTimerBar'
 import { useTicker } from '@/features/focus/useTicker'
 import { useTaskStore } from '@/store/useTaskStore'
+import { setMinutesSpentSync } from '@/store/useTimerStore'
 import type { DragBlockPayload, DropTarget } from '@/features/drag/dragTypes'
 import { detectConflicts, buildScheduleEntryInput } from '@/features/schedule/scheduleUtils'
 import { formatDuration } from '@/shared/utils/time'
@@ -22,9 +23,34 @@ interface Notice {
   type: 'error' | 'info' | 'success'
 }
 
+/** 旧数据兼容：为没有 totalMinutesSpent 的存量任务补齐默认值 */
+function migrateTasksMinuteField<T extends { totalMinutesSpent?: number }>(
+  tasks: T[],
+): T[] {
+  let changed = false
+  const next = tasks.map((t) => {
+    if ('totalMinutesSpent' in t) return t
+    changed = true
+    return { ...t, totalMinutesSpent: 0 }
+  })
+  return changed ? next : tasks
+}
+
 export default function App() {
-  const { scheduleBlock, removeScheduleEntry, scheduleEntries, tasks, taskBlocks } = useTaskStore()
+  const { scheduleBlock, removeScheduleEntry, scheduleEntries, tasks, taskBlocks, addMinutesSpent } =
+    useTaskStore()
   useTicker()
+
+  // 初始化：1) 绑定计时器→任务用时的同步回调 2) 兼容老数据补齐 totalMinutesSpent
+  useEffect(() => {
+    setMinutesSpentSync(addMinutesSpent)
+    // 老数据兼容：只在确实需要时写回
+    const state = useTaskStore.getState()
+    const migrated = migrateTasksMinuteField(state.tasks)
+    if (migrated !== state.tasks) {
+      useTaskStore.setState({ tasks: migrated })
+    }
+  }, [addMinutesSpent])
 
   const [timerPanelOpen, setTimerPanelOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)

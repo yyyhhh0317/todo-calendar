@@ -24,4 +24,9 @@ export interface TimerSession {
   durationMinutes?: number
   /** 已经过的秒数，正向计时与暂停恢复都依赖该字段 */
   elapsedSeconds: number
+  /**
+   * 已经累加到任务 totalMinutesSpent 的分钟数，用于避免重复计费
+   * （因为暂停/结束每次只累加增量）
+   */
+  accountedMinutes?: number
 }
