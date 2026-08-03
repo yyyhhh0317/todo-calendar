@@ -221,11 +221,17 @@ export const useTaskStore = create<TaskState>((set, get) => {
           status: 'unscheduled',
           isStarred: false,
         }))
+        // 旧块即将被替换，需同步清理这些旧块关联的排期记录，避免孤儿数据导致后续冲突检测误报
+        const oldBlockIds = s.taskBlocks.filter((b) => b.taskId === taskId).map((b) => b.id)
         return {
           taskBlocks: [
             ...s.taskBlocks.filter((b) => b.taskId !== taskId),
             ...newBlocks,
           ],
+          scheduleEntries: s.scheduleEntries.filter((e) => !oldBlockIds.includes(e.blockId)),
+          tasks: s.tasks.map((t) =>
+            t.id === taskId ? { ...t, status: 'todo', updatedAt: new Date().toISOString() } : t,
+          ),
         }
       })
       persist()
