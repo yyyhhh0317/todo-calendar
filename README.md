@@ -20,7 +20,11 @@ A lightweight planner that fuses a classic TODO list with a time-table.
 
 ---
 
-![Todo Calendar 演示](docs/demo1.gif)
+## 🎬 演示
+
+![周视图演示](docs/demo1.gif)
+
+![月视图演示](docs/demo2.gif)
 
 ## 这是什么？
 
@@ -45,10 +49,6 @@ Todo Calendar 不是又一个 TODO App，也不是又一个日历。它解决的
 | **⏰ 倒计时徽标** | 对有目标时间的任务显示「还剩 X 天 / X 小时」，到期自动标红 |
 | **🎯 专注计时** | 单计时器 + 迷你悬浮条 + 面板弹窗，支持正向计时与任务关联 |
 | **💾 本地持久化** | 全部数据保存在 localStorage，刷新不丢失，零后端依赖 |
-
-### 月视图预览
-
-![月视图](docs/month-view.png)
 
 ---
 

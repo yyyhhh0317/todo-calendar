@@ -20,7 +20,11 @@
 
 ---
 
-![Todo Calendar Demo](docs/demo1.gif)
+## 🎬 Demo
+
+![Week View Demo](docs/demo1.gif)
+
+![Month View Demo](docs/demo2.gif)
 
 ## What is this?
 
@@ -45,10 +49,6 @@ A traditional TODO list tells you "these things need to be done" but not when; a
 | **⏰ Countdown Badge** | Shows "X days / X hours left" for tasks with target times, auto-flags on expiry |
 | **🎯 Focus Timer** | Single timer + mini floating bar + panel popup, supports stopwatch mode and task association |
 | **💾 Local Persistence** | All data saved in localStorage, survives refresh, zero backend dependency |
-
-### Month View Preview
-
-![Month View](docs/month-view.png)
 
 ---
 
