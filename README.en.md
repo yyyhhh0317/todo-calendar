@@ -22,9 +22,7 @@
 
 ## 🎬 Demo
 
-![Week View Demo](docs/demo1.gif)
-
-![Month View Demo](docs/demo2.gif)
+![Week View Demo](docs/demo1.gif)(docs/demo2.gif)
 
 ## What is this?
 

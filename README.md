@@ -22,9 +22,7 @@ A lightweight planner that fuses a classic TODO list with a time-table.
 
 ## 🎬 演示
 
-![周视图演示](docs/demo1.gif)
-
-![月视图演示](docs/demo2.gif)
+![视图演示](docs/demo1.gif)(docs/demo2.gif)
 
 ## 这是什么？
 
