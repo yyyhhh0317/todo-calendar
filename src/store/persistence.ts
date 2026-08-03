@@ -45,4 +45,5 @@ export const STORAGE_KEYS = {
   importantDays: 'important-days',
   timerSessions: 'timer-sessions',
   ui: 'ui',
+  sidebarSplit: 'sidebar-split',
 } as const

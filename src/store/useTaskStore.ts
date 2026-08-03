@@ -33,6 +33,10 @@ interface TaskState {
   toggleTaskStar: (id: string) => void
   completeTask: (id: string, extraMinutesSpent?: number) => void
   uncompleteTask: (id: string) => void
+  /** 完成单个块：保留任务，重算任务状态（全部块完成时任务自动 done） */
+  completeBlock: (blockId: string, extraMinutesSpent?: number) => void
+  /** 撤销单块完成 */
+  uncompleteBlock: (blockId: string) => void
   /** 累加任务实际用时（由计时器在暂停/结束时调用） */
   addMinutesSpent: (taskId: string, minutes: number) => void
 
@@ -228,6 +232,82 @@ export const useTaskStore = create<TaskState>((set, get) => {
                   completedDate: undefined,
                 }
               : b,
+          ),
+        }
+      })
+      persist()
+    },
+
+    completeBlock: (blockId, extraMinutesSpent) => {
+      const now = new Date().toISOString()
+      const today = now.slice(0, 10)
+      set((s) => {
+        const block = s.taskBlocks.find((b) => b.id === blockId)
+        if (!block) return s
+        const taskId = block.taskId
+        // 标记该块为 done
+        const updatedBlocks = s.taskBlocks.map((b) =>
+          b.id === blockId
+            ? { ...b, status: 'done' as BlockStatus, completedAt: now, completedDate: today }
+            : b,
+        )
+        // 重算任务状态：所有块 done → done，否则 → partial/todo
+        const taskBlocks = updatedBlocks.filter((b) => b.taskId === taskId)
+        const newTaskStatus = deriveTaskStatus(taskBlocks)
+        return {
+          taskBlocks: updatedBlocks,
+          tasks: s.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  status: newTaskStatus,
+                  totalMinutesSpent: t.totalMinutesSpent + (extraMinutesSpent ?? 0),
+                  completedAt: newTaskStatus === 'done' ? now : t.completedAt,
+                  completedDate: newTaskStatus === 'done' ? today : t.completedDate,
+                  updatedAt: now,
+                }
+              : t,
+          ),
+          // 移除该块的排期
+          scheduleEntries: s.scheduleEntries.filter((e) => e.blockId !== blockId),
+        }
+      })
+      persist()
+    },
+
+    uncompleteBlock: (blockId) => {
+      const now = new Date().toISOString()
+      set((s) => {
+        const block = s.taskBlocks.find((b) => b.id === blockId)
+        if (!block) return s
+        const taskId = block.taskId
+        const updatedBlocks = s.taskBlocks.map((b) =>
+          b.id === blockId
+            ? {
+                ...b,
+                status: deriveBlockStatus(
+                  s.scheduleEntries.find((e) => e.blockId === blockId),
+                  false,
+                ) as BlockStatus,
+                completedAt: undefined,
+                completedDate: undefined,
+              }
+            : b,
+        )
+        const taskBlocks = updatedBlocks.filter((b) => b.taskId === taskId)
+        const newTaskStatus = deriveTaskStatus(taskBlocks)
+        return {
+          taskBlocks: updatedBlocks,
+          tasks: s.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  status: newTaskStatus,
+                  completedAt: newTaskStatus === 'done' ? t.completedAt : undefined,
+                  completedDate: newTaskStatus === 'done' ? t.completedDate : undefined,
+                  updatedAt: now,
+                }
+              : t,
           ),
         }
       })

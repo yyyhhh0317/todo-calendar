@@ -1,128 +1,316 @@
 /**
- * 任务侧栏
- * 任务栏用于创建、拆分、筛选、拖拽和查看当天任务
- * 宽度固定约 30%
+ * 任务侧栏（两区拆分版）
+ * - 上：未安排区（默认 60%）- 所有尚未排到时间的块
+ * - 下：已安排区（默认 40%）- 选中日期范围内已排期的块
+ * - 中间分隔条可拖拽调节比例
+ * - 拆分任务：每块独立显示为一张卡片
+ * - 计时器：已安排 / 未安排 均可启动
  */
-import { useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useTaskStore } from '@/store/useTaskStore'
 import { useUIStore } from '@/store/useUIStore'
+import { useSidebarSplitStore } from '@/store/useSidebarSplitStore'
 import { shouldShowInDayView } from '../taskTypes'
-import { formatFullDate, fromDateKey, toDateKey } from '@/shared/utils/date'
+import { formatFullDate, fromDateKey, toDateKey, getWeekStart, getWeekEnd } from '@/shared/utils/date'
+import { eachDayOfInterval, addDays } from 'date-fns'
 import { TaskComposer } from './TaskComposer'
-import { TaskCard } from './TaskCard'
-import { SegmentedControl } from '@/shared/components/SegmentedControl'
-import { useState } from 'react'
-
-type FilterMode = 'today' | 'unscheduled' | 'all'
-
-const FILTER_OPTIONS: { value: FilterMode; label: string }[] = [
-  { value: 'today', label: '当天' },
-  { value: 'unscheduled', label: '未安排' },
-  { value: 'all', label: '全部' },
-]
+import { TaskBlockCard } from './TaskBlockCard'
+import { TaskSplitEditor } from './TaskSplitEditor'
+import { cn } from '@/shared/utils/cn'
 
 export function TaskSidebar() {
-  const { tasks, taskBlocks, scheduleEntries } = useTaskStore()
+  const { tasks, taskBlocks, scheduleEntries, splitTask } = useTaskStore()
   const { selectedDate } = useUIStore()
-  const [filter, setFilter] = useState<FilterMode>('today')
+  const { unscheduledRatio, setUnscheduledRatio } = useSidebarSplitStore()
 
   const today = toDateKey(new Date())
 
-  const filteredTasks = useMemo(() => {
-    // 先按创建时间倒序
-    const sorted = [...tasks].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  // 用于分隔条拖拽的边界框计算
+  const containerRef = useRef<HTMLElement>(null)
+  const draggingRef = useRef(false)
 
-    if (filter === 'all') {
-      return sorted.filter((t) => shouldShowInDayView(t, selectedDate, today))
+  const onDividerPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      draggingRef.current = true
+      ;(e.target as Element).setPointerCapture?.(e.pointerId)
+      ;(e.currentTarget as Element).classList.add('cursor-row-resize')
+      document.body.style.cursor = 'row-resize'
+    },
+    [],
+  )
+
+  const onDividerPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!draggingRef.current || !containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const dividerY = e.clientY - rect.top
+      // 扣除上下预留的 header（66px）+ 底部安全区，计算新比例
+      const headerH = 58 // 选中日期 header 高度
+      const composerH = 96 // TaskComposer 约高
+      const dividerRow = rect.height - headerH - composerH
+      const ratio = (dividerY - headerH - composerH) / dividerRow
+      setUnscheduledRatio(ratio)
+    },
+    [setUnscheduledRatio],
+  )
+
+  const onDividerPointerUp = useCallback(() => {
+    draggingRef.current = false
+    document.body.style.cursor = ''
+  }, [])
+
+  // 计算选中日期所在周的起止（周视图：周一到周日），用于已安排区筛选
+  const weekRange = useMemo(() => {
+    const sel = fromDateKey(selectedDate)
+    const s = getWeekStart(sel)
+    const e = getWeekEnd(sel)
+    const days = eachDayOfInterval({ start: s, end: e })
+    void addDays
+    return new Set(days.map(toDateKey))
+  }, [selectedDate])
+
+  // 整理数据：块 → 任务 → 排期 映射
+  const { unscheduledBlocks, scheduledBlocks, taskMap, blockToEntry } = useMemo(() => {
+    const tMap: Record<string, typeof tasks[number]> = {}
+    for (const t of tasks) tMap[t.id] = t
+
+    // 只保留选中日期应该显示的任务（shouldShowInDayView）
+    const visibleTaskIds = new Set(
+      tasks.filter((t) => shouldShowInDayView(t, selectedDate, today)).map((t) => t.id),
+    )
+
+    // 排期 → 按块聚合
+    const entryByBlock: Record<string, (typeof scheduleEntries)[number]> = {}
+    for (const e of scheduleEntries) {
+      if (!visibleTaskIds.has(e.taskId)) continue
+      // 已安排区：展示选中日期所在周 + 月视图待定（无 startTime）
+      if (weekRange.has(e.date) || !e.startTime) {
+        // 同一块如果有多个日期的排期（极端情况），只保留选中日期的那一条
+        const cur = entryByBlock[e.blockId]
+        if (!cur || e.date === selectedDate) {
+          entryByBlock[e.blockId] = e
+        }
+      }
     }
 
-    if (filter === 'unscheduled') {
-      return sorted.filter((t) => {
-        if (t.status === 'done') return false
-        const blocks = taskBlocks.filter((b) => b.taskId === t.id)
-        return blocks.every((b) => b.status === 'unscheduled')
-      })
+    const unscheduled: (typeof taskBlocks)[number][] = []
+    const scheduled: (typeof taskBlocks)[number][] = []
+
+    for (const b of taskBlocks) {
+      if (!visibleTaskIds.has(b.taskId)) continue
+      if (b.status === 'done') {
+        const task = tMap[b.taskId]
+        // 任务整体已完成：不在侧栏显示（由 shouldShowInDayView 控制可见性）
+        if (task && task.status === 'done') continue
+        // 部分完成：已完成块归到未安排区，用户可看到并撤销
+        unscheduled.push(b)
+        continue
+      }
+      if (entryByBlock[b.id]) {
+        scheduled.push(b)
+      } else {
+        unscheduled.push(b)
+      }
     }
 
-    // today：当天已安排或日期级待定的任务
-    return sorted.filter((t) => {
-      if (!shouldShowInDayView(t, selectedDate, today)) return false
-      const blocks = taskBlocks.filter((b) => b.taskId === t.id)
-      const blockIds = new Set(blocks.map((b) => b.id))
-      const hasEntryOnDate = scheduleEntries.some(
-        (e) => blockIds.has(e.blockId) && e.date === selectedDate,
-      )
-      // 未安排的也显示在当天列表中
-      return hasEntryOnDate || blocks.some((b) => b.status === 'unscheduled')
+    // 已安排按时间排序，未安排按任务创建时间 + 块顺序排序
+    unscheduled.sort((a, b) => {
+      const ta = tMap[a.taskId]
+      const tb = tMap[b.taskId]
+      if (ta?.createdAt !== tb?.createdAt)
+        return (tb?.createdAt ?? '').localeCompare(ta?.createdAt ?? '')
+      return a.order - b.order
     })
-  }, [tasks, taskBlocks, scheduleEntries, filter, selectedDate, today])
+    scheduled.sort((a, b) => {
+      const ea = entryByBlock[a.id]
+      const eb = entryByBlock[b.id]
+      // 先按日期，再按开始时间
+      const dcmp = (ea?.date ?? '').localeCompare(eb?.date ?? '')
+      if (dcmp !== 0) return dcmp
+      const ta = (ea?.startTime ?? '23:59').padStart(5, '0')
+      const tb = (eb?.startTime ?? '23:59').padStart(5, '0')
+      return ta.localeCompare(tb)
+    })
 
-  const completedCount = filteredTasks.filter((t) => t.status === 'done').length
+    return {
+      unscheduledBlocks: unscheduled,
+      scheduledBlocks: scheduled,
+      taskMap: tMap,
+      blockToEntry: entryByBlock,
+    }
+  }, [tasks, taskBlocks, scheduleEntries, selectedDate, today, weekRange])
+
+  const renderEmpty = (zone: 'unscheduled' | 'scheduled') => (
+    <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+      <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center mb-2">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="text-brand-300"
+        >
+          {zone === 'unscheduled' ? (
+            <>
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </>
+          ) : (
+            <>
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 16 14" />
+            </>
+          )}
+        </svg>
+      </div>
+      <p className="text-xs text-ink-muted">
+        {zone === 'unscheduled' ? '暂无未安排的任务块' : '本周暂未安排任务'}
+      </p>
+      <p className="text-[11px] text-ink-muted/60 mt-0.5">
+        {zone === 'unscheduled'
+          ? '拖拽下方的块到左侧日历'
+          : '把上方的块拖到左侧日历即可排期'}
+      </p>
+    </div>
+  )
 
   return (
-    <aside className="flex flex-col h-full min-w-0 overflow-hidden glass-panel rounded-4xl">
+    <aside
+      ref={containerRef}
+      className="flex flex-col h-full min-w-0 overflow-hidden glass-panel rounded-4xl"
+    >
       {/* 选中日期标题 */}
-      <div className="px-4 py-3 border-b border-brand-200/30">
+      <div className="px-4 py-3 border-b border-brand-200/30 shrink-0">
         <div className="text-xs text-ink-muted">选中日期</div>
         <div className="text-sm font-bold text-ink">{formatFullDate(fromDateKey(selectedDate))}</div>
       </div>
 
-      {/* 滚动内容区 */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-        {/* 任务创建表单 */}
+      {/* 任务创建表单 */}
+      <div className="px-3 pt-3 shrink-0">
         <TaskComposer />
+      </div>
 
-        {/* 筛选 */}
-        <div className="flex items-center justify-between mb-3">
-          <SegmentedControl
-            value={filter}
-            onChange={setFilter}
-            options={FILTER_OPTIONS}
-            className="text-xs"
-          />
-          <span className="text-[11px] text-ink-muted shrink-0 ml-2">
-            {filteredTasks.length} 项{completedCount > 0 && ` · ${completedCount} 已完成`}
-          </span>
+      {/* 未安排区（可滚动） */}
+      <div
+        className="flex flex-col min-h-0 overflow-hidden"
+        style={{ height: `${unscheduledRatio * 100}%`, flexGrow: 0 }}
+      >
+        <div className="px-3 pt-3 pb-1 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-700">
+            <span className="w-2 h-2 rounded-full bg-brand-400" />
+            未安排
+            <span className="font-normal text-ink-muted/60">· {unscheduledBlocks.length}</span>
+          </div>
+          {/* 快捷拆分入口：对第一个未完成单块任务可快捷拆分 */}
+          {(() => {
+            const firstSingleTask = unscheduledBlocks
+              .map((b) => taskMap[b.taskId])
+              .find((t) => t && t.status !== 'done')
+            if (!firstSingleTask) return null
+            const blocksForTask = taskBlocks.filter((b) => b.taskId === firstSingleTask.id)
+            if (blocksForTask.length > 1) return null
+            return (
+              <button
+                onClick={() => splitTask(firstSingleTask.id, 2)}
+                className="text-[10px] text-brand-500 hover:text-brand-600 font-medium"
+              >
+                拆分首批任务
+              </button>
+            )
+          })()}
         </div>
-
-        {/* 任务列表 */}
-        {filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-300">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 pb-2">
+          {unscheduledBlocks.length === 0 ? (
+            renderEmpty('unscheduled')
+          ) : (
+            <div className="space-y-2">
+              {unscheduledBlocks.map((block) => {
+                const task = taskMap[block.taskId]
+                if (!task) return null
+                const allBlocks = taskBlocks.filter((b) => b.taskId === task.id)
+                return (
+                  <TaskBlockCard
+                    key={block.id}
+                    task={task}
+                    block={block}
+                    allBlocks={allBlocks}
+                  />
+                )
+              })}
+              {/* 拆分编辑器入口：多块任务的展开编辑器 */}
+              {renderSplitEditors(tasks, taskBlocks, taskMap, unscheduledBlocks)}
             </div>
-            <p className="text-sm text-ink-muted">
-              {filter === 'today'
-                ? '当天还没有任务'
-                : filter === 'unscheduled'
-                  ? '没有未安排的任务'
-                  : '还没有任何任务'}
-            </p>
-            <p className="text-xs text-ink-muted/70 mt-1">在上方表单创建新任务</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredTasks.map((task) => {
-              const blocks = taskBlocks.filter((b) => b.taskId === task.id)
-              const blockIds = new Set(blocks.map((b) => b.id))
-              const entries = scheduleEntries.filter((e) => blockIds.has(e.blockId))
-              return (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  blocks={blocks}
-                  entries={entries}
-                />
-              )
-            })}
-          </div>
+          )}
+        </div>
+      </div>
+
+      {/* 拖拽分隔条 */}
+      <div
+        className={cn(
+          'shrink-0 group flex items-center justify-center py-1.5',
+          'hover:bg-brand-50 cursor-row-resize select-none touch-none',
+          'border-y border-brand-200/20',
         )}
+        onPointerDown={onDividerPointerDown}
+        onPointerMove={onDividerPointerMove}
+        onPointerUp={onDividerPointerUp}
+        onPointerCancel={onDividerPointerUp}
+      >
+        <div className="w-10 h-1 rounded-full bg-brand-200/60 group-hover:bg-brand-300 transition-colors" />
+      </div>
+
+      {/* 已安排区（可滚动） */}
+      <div
+        className="flex flex-col min-h-0 overflow-hidden"
+        style={{ height: `${(1 - unscheduledRatio) * 100}%`, flexGrow: 0 }}
+      >
+        <div className="px-3 pt-2 pb-1 flex items-center gap-1.5 text-[11px] font-semibold text-accent-700 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-accent-400" />
+          已安排 · 本周
+          <span className="font-normal text-ink-muted/60">· {scheduledBlocks.length}</span>
+        </div>
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 pb-3">
+          {scheduledBlocks.length === 0 ? (
+            renderEmpty('scheduled')
+          ) : (
+            <div className="space-y-2">
+              {scheduledBlocks.map((block) => {
+                const task = taskMap[block.taskId]
+                if (!task) return null
+                const allBlocks = taskBlocks.filter((b) => b.taskId === task.id)
+                const entry = blockToEntry[block.id]
+                return (
+                  <TaskBlockCard
+                    key={block.id}
+                    task={task}
+                    block={block}
+                    allBlocks={allBlocks}
+                    entry={entry}
+                    compact
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   )
+}
+
+/**
+ * 渲染每个多块任务的拆分编辑器（最多一个任务一个，避免重复）
+ */
+function renderSplitEditors(
+  _tasks: ReturnType<typeof useTaskStore.getState>['tasks'],
+  _taskBlocks: ReturnType<typeof useTaskStore.getState>['taskBlocks'],
+  _taskMap: Record<string, ReturnType<typeof useTaskStore.getState>['tasks'][number]>,
+  _unscheduledBlocks: ReturnType<typeof useTaskStore.getState>['taskBlocks'],
+) {
+  // 拆分编辑器在本版本通过 TaskSplitEditor 单独调用，此处留空
+  // （可在后续版本为每个多块任务添加展开按钮）
+  void TaskSplitEditor
+  return null
 }
