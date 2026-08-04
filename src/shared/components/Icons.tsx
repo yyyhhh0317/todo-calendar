@@ -114,3 +114,35 @@ export const SplitIcon = ({ size, ...props }: IconProps) => (
     <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
   </svg>
 )
+
+export const ChartIcon = ({ size, ...props }: IconProps) => (
+  <svg {...base(size)} {...props}>
+    <line x1="12" y1="20" x2="12" y2="10" />
+    <line x1="18" y1="20" x2="18" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="16" />
+    <line x1="3" y1="20" x2="21" y2="20" />
+  </svg>
+)
+
+export const DownloadIcon = ({ size, ...props }: IconProps) => (
+  <svg {...base(size)} {...props}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+)
+
+export const UploadIcon = ({ size, ...props }: IconProps) => (
+  <svg {...base(size)} {...props}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+)
+
+export const CloseIcon = ({ size, ...props }: IconProps) => (
+  <svg {...base(size)} {...props}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+)

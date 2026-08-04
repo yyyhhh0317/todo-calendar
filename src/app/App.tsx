@@ -10,6 +10,8 @@ import { ScheduleBoard } from '@/features/schedule/components/ScheduleBoard'
 import { TaskSidebar } from '@/features/tasks/components/TaskSidebar'
 import { TimerPanel } from '@/features/focus/components/TimerPanel'
 import { MiniTimerBar } from '@/features/focus/components/MiniTimerBar'
+import { SettingsPanel } from '@/features/settings/components/SettingsPanel'
+import { StatsPanel } from '@/features/stats/components/StatsPanel'
 import { useTicker } from '@/features/focus/useTicker'
 import { useTaskStore } from '@/store/useTaskStore'
 import { setMinutesSpentSync } from '@/store/useTimerStore'
@@ -53,6 +55,8 @@ export default function App() {
   }, [addMinutesSpent])
 
   const [timerPanelOpen, setTimerPanelOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
 
   const showNotice = useCallback((message: string, type: Notice['type'] = 'info') => {
@@ -162,7 +166,10 @@ export default function App() {
   return (
     <DndProvider onDragEnd={handleDragEnd} renderDragOverlay={renderDragOverlay}>
       <div className="flex flex-col h-screen max-h-screen overflow-hidden">
-        <TopBar onOpenTimer={() => setTimerPanelOpen(true)} />
+        <TopBar
+          onOpenTimer={() => setTimerPanelOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
 
         {/* 内联提示条 */}
         {notice && (
@@ -195,6 +202,41 @@ export default function App() {
         >
           <div onClick={(e) => e.stopPropagation()} className="animate-slide-up">
             <TimerPanel onClose={() => setTimerPanelOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* 设置面板弹窗 */}
+      {settingsOpen && !statsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-end p-4 pt-20 bg-black/10 backdrop-blur-sm"
+          onClick={() => setSettingsOpen(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="animate-slide-up">
+            <SettingsPanel
+              onClose={() => setSettingsOpen(false)}
+              onOpenStats={() => setStatsOpen(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 统计面板弹窗 */}
+      {statsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-end p-4 pt-20 bg-black/10 backdrop-blur-sm"
+          onClick={() => {
+            setStatsOpen(false)
+            setSettingsOpen(false)
+          }}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="animate-slide-up">
+            <StatsPanel
+              onClose={() => {
+                setStatsOpen(false)
+                setSettingsOpen(false)
+              }}
+            />
           </div>
         </div>
       )}

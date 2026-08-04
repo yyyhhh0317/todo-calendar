@@ -16,13 +16,15 @@ import {
   ChevronRightIcon,
   CalendarIcon,
   TimerIcon,
+  SettingsIcon,
 } from '@/shared/components/Icons'
 
 interface TopBarProps {
   onOpenTimer?: () => void
+  onOpenSettings?: () => void
 }
 
-export function TopBar({ onOpenTimer }: TopBarProps = {}) {
+export function TopBar({ onOpenTimer, onOpenSettings }: TopBarProps = {}) {
   const { viewMode, setViewMode, goToToday, navigatePrev, navigateNext, weekRefDate, monthRefDate } =
     useUIStore()
   const { activeTimerId } = useTimerStore()
@@ -79,6 +81,15 @@ export function TopBar({ onOpenTimer }: TopBarProps = {}) {
           title="计时器"
         >
           <TimerIcon />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenSettings}
+          aria-label="设置"
+          title="设置"
+        >
+          <SettingsIcon />
         </Button>
       </div>
     </header>
