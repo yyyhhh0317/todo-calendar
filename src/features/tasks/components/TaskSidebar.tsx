@@ -10,20 +10,38 @@ import { useCallback, useMemo, useRef } from 'react'
 import { useTaskStore } from '@/store/useTaskStore'
 import { useUIStore } from '@/store/useUIStore'
 import { useSidebarSplitStore } from '@/store/useSidebarSplitStore'
+import { useFilterStore } from '@/store/useFilterStore'
 import { shouldShowInDayView } from '../taskTypes'
 import { formatFullDate, fromDateKey, toDateKey, getWeekStart, getWeekEnd } from '@/shared/utils/date'
 import { eachDayOfInterval, addDays } from 'date-fns'
 import { TaskComposer } from './TaskComposer'
 import { TaskBlockCard } from './TaskBlockCard'
 import { TaskSplitEditor } from './TaskSplitEditor'
+import { SearchFilterBar } from './SearchFilterBar'
 import { cn } from '@/shared/utils/cn'
 
 export function TaskSidebar() {
   const { tasks, taskBlocks, scheduleEntries, splitTask } = useTaskStore()
   const { selectedDate } = useUIStore()
   const { unscheduledRatio, setUnscheduledRatio } = useSidebarSplitStore()
+  const { keyword, status, importance } = useFilterStore()
 
   const today = toDateKey(new Date())
+
+  // 任务筛选匹配（搜索 + 状态 + 重要程度）
+  const { hasFilter, matchesFilter } = useMemo(() => {
+    const kw = keyword.trim().toLowerCase()
+    const has = kw !== '' || status !== 'all' || importance !== 'all'
+    return {
+      hasFilter: has,
+      matchesFilter: (task: { title: string; status: string; importance: string }) => {
+        if (status !== 'all' && task.status !== status) return false
+        if (importance !== 'all' && task.importance !== importance) return false
+        if (kw !== '' && !task.title.toLowerCase().includes(kw)) return false
+        return true
+      },
+    }
+  }, [keyword, status, importance])
 
   // 用于分隔条拖拽的边界框计算
   const containerRef = useRef<HTMLElement>(null)
@@ -75,8 +93,15 @@ export function TaskSidebar() {
     for (const t of tasks) tMap[t.id] = t
 
     // 只保留选中日期应该显示的任务（shouldShowInDayView）
+    // 但当用户主动筛选"已完成"状态时，突破 shouldShowInDayView 限制，让已完成任务可见
+    // 有筛选条件时，同时按关键词/状态/重要程度过滤
     const visibleTaskIds = new Set(
-      tasks.filter((t) => shouldShowInDayView(t, selectedDate, today)).map((t) => t.id),
+      tasks
+        .filter((t) =>
+          status === 'done' ? true : shouldShowInDayView(t, selectedDate, today),
+        )
+        .filter((t) => !hasFilter || matchesFilter(t))
+        .map((t) => t.id),
     )
 
     // 排期 → 按块聚合
@@ -100,8 +125,9 @@ export function TaskSidebar() {
       if (!visibleTaskIds.has(b.taskId)) continue
       if (b.status === 'done') {
         const task = tMap[b.taskId]
-        // 任务整体已完成：不在侧栏显示（由 shouldShowInDayView 控制可见性）
-        if (task && task.status === 'done') continue
+        // 任务整体已完成：默认不在侧栏显示
+        // 但当用户主动筛选"已完成"状态时，显示这些块以便查看历史
+        if (task && task.status === 'done' && status !== 'done') continue
         // 部分完成：已完成块归到未安排区，用户可看到并撤销
         unscheduled.push(b)
         continue
@@ -138,7 +164,7 @@ export function TaskSidebar() {
       taskMap: tMap,
       blockToEntry: entryByBlock,
     }
-  }, [tasks, taskBlocks, scheduleEntries, selectedDate, today, weekRange])
+  }, [tasks, taskBlocks, scheduleEntries, selectedDate, today, weekRange, hasFilter, matchesFilter])
 
   const renderEmpty = (zone: 'unscheduled' | 'scheduled') => (
     <div className="flex flex-col items-center justify-center py-8 text-center px-4">
@@ -152,7 +178,12 @@ export function TaskSidebar() {
           strokeWidth="1.5"
           className="text-brand-300"
         >
-          {zone === 'unscheduled' ? (
+          {hasFilter ? (
+            <>
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </>
+          ) : zone === 'unscheduled' ? (
             <>
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="3" y1="10" x2="21" y2="10" />
@@ -166,12 +197,18 @@ export function TaskSidebar() {
         </svg>
       </div>
       <p className="text-xs text-ink-muted">
-        {zone === 'unscheduled' ? '暂无未安排的任务块' : '本周暂未安排任务'}
+        {hasFilter
+          ? '没有匹配的任务'
+          : zone === 'unscheduled'
+            ? '暂无未安排的任务块'
+            : '本周暂未安排任务'}
       </p>
       <p className="text-[11px] text-ink-muted/60 mt-0.5">
-        {zone === 'unscheduled'
-          ? '拖拽下方的块到左侧日历'
-          : '把上方的块拖到左侧日历即可排期'}
+        {hasFilter
+          ? '尝试调整筛选条件'
+          : zone === 'unscheduled'
+            ? '拖拽下方的块到左侧日历'
+            : '把上方的块拖到左侧日历即可排期'}
       </p>
     </div>
   )
@@ -190,6 +227,11 @@ export function TaskSidebar() {
       {/* 任务创建表单 */}
       <div className="px-3 pt-3 shrink-0">
         <TaskComposer />
+      </div>
+
+      {/* 搜索筛选栏 */}
+      <div className="px-3 pt-2 pb-1 shrink-0">
+        <SearchFilterBar />
       </div>
 
       {/* 未安排区（可滚动） */}

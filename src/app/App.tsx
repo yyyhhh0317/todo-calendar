@@ -12,8 +12,12 @@ import { TimerPanel } from '@/features/focus/components/TimerPanel'
 import { MiniTimerBar } from '@/features/focus/components/MiniTimerBar'
 import { SettingsPanel } from '@/features/settings/components/SettingsPanel'
 import { StatsPanel } from '@/features/stats/components/StatsPanel'
+import { ShortcutsHelp } from '@/shared/components/ShortcutsHelp'
 import { useTicker } from '@/features/focus/useTicker'
+import { useKeyboard } from '@/shared/hooks/useKeyboard'
 import { useTaskStore } from '@/store/useTaskStore'
+import { useUIStore } from '@/store/useUIStore'
+import { useThemeStore } from '@/store/useThemeStore'
 import { setMinutesSpentSync } from '@/store/useTimerStore'
 import type { DragBlockPayload, DropTarget } from '@/features/drag/dragTypes'
 import { detectConflicts, buildScheduleEntryInput } from '@/features/schedule/scheduleUtils'
@@ -54,10 +58,58 @@ export default function App() {
     }
   }, [addMinutesSpent])
 
+  // 监听系统主题变化：当用户选择"跟随系统"时，自动同步
+  const { syncWithSystem } = useThemeStore()
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => syncWithSystem()
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [syncWithSystem])
+
   const [timerPanelOpen, setTimerPanelOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
+
+  const { setViewMode, goToToday, navigatePrev, navigateNext } = useUIStore()
+
+  const closeTopmostPanel = useCallback(() => {
+    // 按优先级关闭：快捷键帮助 > 统计 > 设置 > 计时器
+    if (shortcutsOpen) {
+      setShortcutsOpen(false)
+    } else if (statsOpen) {
+      setStatsOpen(false)
+      setSettingsOpen(false)
+    } else if (settingsOpen) {
+      setSettingsOpen(false)
+    } else if (timerPanelOpen) {
+      setTimerPanelOpen(false)
+    }
+  }, [shortcutsOpen, statsOpen, settingsOpen, timerPanelOpen])
+
+  // 聚焦任务创建输入框
+  const focusTaskInput = useCallback(() => {
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder="添加新任务..."]',
+    )
+    input?.focus()
+  }, [])
+
+  // 全局键盘快捷键
+  useKeyboard([
+    { key: 'n', handler: focusTaskInput },
+    { key: 't', handler: () => setTimerPanelOpen((v) => !v) },
+    { key: 's', handler: () => setSettingsOpen((v) => !v) },
+    { key: 'w', handler: () => setViewMode('week') },
+    { key: 'm', handler: () => setViewMode('month') },
+    { key: 'h', handler: goToToday },
+    { key: 'ArrowLeft', handler: navigatePrev },
+    { key: 'ArrowRight', handler: navigateNext },
+    { key: '?', handler: () => setShortcutsOpen((v) => !v) },
+    { key: 'Escape', handler: closeTopmostPanel, allowInInput: true },
+  ])
 
   const showNotice = useCallback((message: string, type: Notice['type'] = 'info') => {
     setNotice({ message, type })
@@ -169,6 +221,7 @@ export default function App() {
         <TopBar
           onOpenTimer={() => setTimerPanelOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
         />
 
         {/* 内联提示条 */}
@@ -240,6 +293,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* 快捷键帮助弹窗 */}
+      {shortcutsOpen && <ShortcutsHelp onClose={() => setShortcutsOpen(false)} />}
 
       {/* 迷你悬浮计时条 */}
       <MiniTimerBar onExpand={() => setTimerPanelOpen(true)} />

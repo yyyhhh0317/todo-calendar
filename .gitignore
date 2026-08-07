@@ -41,3 +41,6 @@ todo-calendar-dev-spec.html
 
 # Blog posts / promotional drafts (not part of the project source)
 blog/
+
+# Internal dev notes (version goals & outcomes, only for dev process)
+dev-notes/

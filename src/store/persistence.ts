@@ -46,4 +46,6 @@ export const STORAGE_KEYS = {
   timerSessions: 'timer-sessions',
   ui: 'ui',
   sidebarSplit: 'sidebar-split',
+  taskFilter: 'task-filter',
+  theme: 'theme',
 } as const

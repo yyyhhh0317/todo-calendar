@@ -1,6 +1,6 @@
 /**
  * 设置面板
- * 提供数据导出、导入、统计回顾入口
+ * 提供主题切换、数据导出、导入、统计回顾入口
  */
 import { useRef, useState } from 'react'
 import { Button } from '@/shared/components/Button'
@@ -10,7 +10,11 @@ import {
   UploadIcon,
   ChartIcon,
   CloseIcon,
+  SunIcon,
+  MoonIcon,
+  MonitorIcon,
 } from '@/shared/components/Icons'
+import { useThemeStore, type ThemeMode } from '@/store/useThemeStore'
 import { downloadBackup, validateImport, restoreBackup } from '../dataTransfer'
 import { cn } from '@/shared/utils/cn'
 
@@ -19,9 +23,16 @@ interface SettingsPanelProps {
   onOpenStats: () => void
 }
 
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
+  { value: 'light', label: '浅色', icon: <SunIcon size={14} /> },
+  { value: 'dark', label: '暗色', icon: <MoonIcon size={14} /> },
+  { value: 'system', label: '跟随系统', icon: <MonitorIcon size={14} /> },
+]
+
 export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null)
+  const { mode: themeMode, setMode: setThemeMode } = useThemeStore()
 
   const handleExport = () => {
     downloadBackup()
@@ -69,6 +80,28 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭" className="!h-8 !w-8">
           <CloseIcon size={16} />
         </Button>
+      </div>
+
+      {/* 外观 - 主题切换 */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">外观</h3>
+        <div className="flex gap-1 p-1 bg-white/40 border border-brand-200/40 rounded-xl">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setThemeMode(opt.value)}
+              className={cn(
+                'flex-1 inline-flex items-center justify-center gap-1.5 h-8 text-xs font-medium rounded-lg transition-all',
+                themeMode === opt.value
+                  ? 'bg-brand-500 text-white shadow-sm'
+                  : 'text-ink-muted hover:text-ink hover:bg-brand-50',
+              )}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 数据管理 */}

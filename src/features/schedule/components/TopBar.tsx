@@ -17,14 +17,16 @@ import {
   CalendarIcon,
   TimerIcon,
   SettingsIcon,
+  HelpIcon,
 } from '@/shared/components/Icons'
 
 interface TopBarProps {
   onOpenTimer?: () => void
   onOpenSettings?: () => void
+  onOpenShortcuts?: () => void
 }
 
-export function TopBar({ onOpenTimer, onOpenSettings }: TopBarProps = {}) {
+export function TopBar({ onOpenTimer, onOpenSettings, onOpenShortcuts }: TopBarProps = {}) {
   const { viewMode, setViewMode, goToToday, navigatePrev, navigateNext, weekRefDate, monthRefDate } =
     useUIStore()
   const { activeTimerId } = useTimerStore()
@@ -49,16 +51,16 @@ export function TopBar({ onOpenTimer, onOpenSettings }: TopBarProps = {}) {
 
       {/* 中间：日期导航 */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={navigatePrev} aria-label="上一个">
+        <Button variant="ghost" size="icon" onClick={navigatePrev} aria-label="上一个" title="上一个 (←)">
           <ChevronLeftIcon />
         </Button>
         <span className="text-sm font-semibold text-ink min-w-[140px] text-center tabular-nums">
           {rangeLabel}
         </span>
-        <Button variant="ghost" size="icon" onClick={navigateNext} aria-label="下一个">
+        <Button variant="ghost" size="icon" onClick={navigateNext} aria-label="下一个" title="下一个 (→)">
           <ChevronRightIcon />
         </Button>
-        <Button variant="secondary" size="sm" onClick={goToToday} className="ml-2">
+        <Button variant="secondary" size="sm" onClick={goToToday} className="ml-2" title="回到今天 (H)">
           今天
         </Button>
       </div>
@@ -78,7 +80,7 @@ export function TopBar({ onOpenTimer, onOpenSettings }: TopBarProps = {}) {
           size="icon"
           onClick={onOpenTimer}
           aria-label="计时器"
-          title="计时器"
+          title="计时器 (T)"
         >
           <TimerIcon />
         </Button>
@@ -87,9 +89,18 @@ export function TopBar({ onOpenTimer, onOpenSettings }: TopBarProps = {}) {
           size="icon"
           onClick={onOpenSettings}
           aria-label="设置"
-          title="设置"
+          title="设置 (S)"
         >
           <SettingsIcon />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenShortcuts}
+          aria-label="快捷键"
+          title="快捷键 (?)"
+        >
+          <HelpIcon />
         </Button>
       </div>
     </header>
