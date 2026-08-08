@@ -22,7 +22,9 @@
 
 ## 🎬 Demo
 
-![Week View Demo](docs/demo1.gif)(docs/demo2.gif)
+![Week View Demo](docs/screenshot-week.png)
+
+_Week view: drag task blocks onto time slots, critical dates highlighted, sidebar split into unscheduled / scheduled_
 
 ## What is this?
 
@@ -40,13 +42,19 @@ A traditional TODO list tells you "these things need to be done" but not when; a
 | --- | --- |
 | **🧩 Workbench Layout** | 70% scheduling canvas on the left + 30% task sidebar on the right, fixed structure with no jumping |
 | **✂️ Task Splitting** | Split a task into multiple blocks, each draggable and schedulable independently |
-| **🖱️ Drag & Drop Scheduling** | Bidirectional drag-and-drop between task blocks and week/month views powered by `@dnd-kit` |
+| **🖱️ Drag & Drop Scheduling** | Bidirectional drag-and-drop between task blocks and week/month views powered by `@dnd-kit`, with scale/ rotate overlay animation |
 | **🚫 Conflict Detection** | 30-minute granularity, strict overlap prevention with friendly prompts |
 | **📅 Week / Month Views** | Week view for fine time-grid scheduling, month view for rough date-level planning |
 | **🔥 Critical Highlighting** | Two-level importance marking (important / critical) for both tasks and dates |
 | **⏰ Countdown Badge** | Shows "X days / X hours left" for tasks with target times, auto-flags on expiry |
 | **🎯 Focus Timer** | Single timer + mini floating bar + panel popup, supports stopwatch mode and task association |
-| **💾 Local Persistence** | All data saved in localStorage, survives refresh, zero backend dependency |
+| **🎨 Theme Color Customization** | 6 preset brand colors + custom color picker, CSS-variable-driven across the entire app |
+| **🌗 Dark Theme** | Light / dark / follow-system modes, brand color auto-adapts |
+| **🔍 Search & Filter** | Multi-dimensional filtering by keyword, status, importance |
+| **⌨️ Keyboard Shortcuts** | `S` settings, `?` help, `←/→` navigate weeks, and more |
+| **💾 Data Import / Export** | JSON backup for cross-device migration, auto-compatible with older versions via dataVersion |
+| **🛡️ Data Safety** | Auto-migration + quota monitoring + corruption protection — no data loss on upgrade |
+| **☁️ Zero Backend** | All data in localStorage, pure static deployment |
 
 ---
 
@@ -57,9 +65,10 @@ A traditional TODO list tells you "these things need to be done" but not when; a
 | Build | Vite 5 + TypeScript 5 | Mainstream frontend combo, top-tier DX and ecosystem |
 | UI Framework | React 18 | Functional + Hooks, predictable state |
 | Styling | Tailwind CSS 3 + Design Tokens + Glassmorphism | Atomic CSS, easy theming, fully controllable visuals |
-| State | Zustand 4 (3 independent stores) | Lighter than Redux, intuitive API, clear modules |
+| State | Zustand 4 (7 independent stores) | Lighter than Redux, intuitive API, clear modules |
 | Drag & Drop | @dnd-kit/core | Best drag UX in React ecosystem, solid a11y support |
 | Date | date-fns | Functional, tree-shakeable, small footprint |
+| Testing | Vitest + Playwright | Fast unit tests + end-to-end coverage of the full flow |
 
 No UI component library is used — all visuals are handcrafted.
 
@@ -95,8 +104,10 @@ npm run preview
 ### Optional Scripts
 
 ```bash
-npm run lint    # Lint check
-npm run test    # Unit tests (WIP)
+npm run lint         # ESLint check
+npm run test         # Vitest unit tests (watch mode)
+npm run test:unit    # Vitest unit tests (single run)
+npm run test:e2e     # Playwright E2E (run npx playwright install chromium first)
 ```
 
 ---
@@ -134,43 +145,72 @@ Type a title in the "Add new task..." input on the right and press Enter or clic
 ## 📁 Project Structure
 
 ```
-src/
-├── app/
-│   └── App.tsx                     # Root: workbench layout + DndProvider + popups
-├── features/
-│   ├── drag/
-│   │   ├── DndProvider.tsx         # @dnd-kit wrapper
-│   │   └── dragTypes.ts            # Drag payload / target types
-│   ├── focus/
-│   │   ├── components/             # TimerPanel / MiniTimerBar / CountdownBadge / ImportanceToggle
-│   │   ├── useTicker.ts            # Timer tick hook
-│   │   └── focusUtils.ts           # Time formatting utils
-│   ├── schedule/
-│   │   ├── components/             # TopBar / WeekView / MonthView / ScheduledTaskBlock
-│   │   ├── scheduleUtils.ts        # Conflict detection, endTime calculation
-│   │   └── scheduleTypes.ts        # ScheduleEntry / ImportantDay types
-│   └── tasks/
-│       ├── components/             # TaskSidebar / TaskComposer / TaskCard / TaskSplitEditor
-│       ├── taskUtils.ts            # Filter / aggregate logic
-│       └── taskTypes.ts            # Task / TaskBlock types
-├── shared/
-│   ├── components/                 # Button / SegmentedControl / Icons
-│   ├── styles/                     # globals.css + tokens.css (design tokens)
-│   └── utils/                      # date / time / cn / id
-├── store/
-│   ├── useTaskStore.ts             # Task / Block / Schedule / ImportantDay CRUD
-│   ├── useUIStore.ts               # View switching, date navigation
-│   ├── useTimerStore.ts            # Timer state
-│   └── persistence.ts              # localStorage read/write
-├── main.tsx
-└── index.css
+todo-calendar/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                    # GitHub Actions: lint + unit + build + E2E
+│       └── deploy.yml                # GitHub Pages auto-deploy
+├── e2e/
+│   ├── helpers.ts                    # Playwright fixture (clear localStorage)
+│   └── workflow.spec.ts              # Full-flow E2E (create → split → drag → complete → timer)
+├── docs/
+│   └── screenshot-*.png              # README demo screenshots
+├── src/
+│   ├── app/
+│   │   └── App.tsx                   # Root: workbench + DndProvider + popups
+│   ├── features/
+│   │   ├── drag/
+│   │   │   ├── DndProvider.tsx       # @dnd-kit wrapper (drag animations)
+│   │   │   └── dragTypes.ts          # Drag payload / target types
+│   │   ├── focus/
+│   │   │   ├── components/           # TimerPanel / MiniTimerBar / CountdownBadge / ImportanceToggle
+│   │   │   ├── useTicker.ts          # Timer tick hook
+│   │   │   └── focusUtils.ts         # Time formatting utils
+│   │   ├── schedule/
+│   │   │   ├── components/           # TopBar / WeekView / MonthView / ScheduledTaskBlock
+│   │   │   ├── scheduleUtils.ts      # Conflict detection, endTime calculation
+│   │   │   └── scheduleTypes.ts      # ScheduleEntry / ImportantDay types
+│   │   ├── settings/
+│   │   │   ├── components/           # SettingsPanel (theme / brand color / import-export)
+│   │   │   ├── brandUtils.ts         # Palette generation algorithm
+│   │   │   ├── dataTransfer.ts       # Backup import/export + version compat
+│   │   │   └── ...
+│   │   ├── stats/
+│   │   │   └── components/StatsPanel # Time stats + completion heatmap
+│   │   └── tasks/
+│   │       ├── components/           # TaskSidebar / TaskComposer / TaskBlockCard / TaskSplitEditor
+│   │       ├── taskUtils.ts          # Filter / aggregate logic
+│   │       └── taskTypes.ts          # Task / TaskBlock types
+│   ├── shared/
+│   │   ├── components/               # Button / SegmentedControl / Icons / ShortcutsHelp
+│   │   ├── styles/                   # globals.css + tokens.css + dark-theme.css
+│   │   ├── hooks/                    # useKeyboard (shortcuts)
+│   │   └── utils/                    # date / time / cn / id
+│   ├── store/
+│   │   ├── bootstrap.ts              # Boot orchestration (migration first)
+│   │   ├── migrations.ts             # v1 → v2 migration pipeline
+│   │   ├── persistence.ts            # localStorage R/W + quota + corruption guard
+│   │   ├── useTaskStore.ts           # Task / Block / Schedule / ImportantDay CRUD
+│   │   ├── useUIStore.ts             # View switching, date navigation
+│   │   ├── useTimerStore.ts          # Timer state
+│   │   ├── useThemeStore.ts          # Light / dark / follow-system
+│   │   ├── useBrandStore.ts          # Brand color palette persistence
+│   │   ├── useFilterStore.ts         # Search & filter state
+│   │   └── useSidebarSplitStore.ts   # Sidebar two-zone ratio
+│   ├── main.tsx
+│   └── index.css
+├── playwright.config.ts
+├── vite.config.ts
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
 ```
 
 ---
 
 ## 🧠 Design Decisions
 
-| Problem | V1 Decision | Notes |
+| Problem | Decision | Notes |
 | --- | --- | --- |
 | Time granularity | 30-min slots | 8:00 – 22:00, two slots per hour. 15min too granular, 1hr too coarse |
 | Scheduling conflicts | Strictly forbidden | `detectConflicts` checks on drop and prompts |
@@ -178,6 +218,10 @@ src/
 | Timer | Global single instance | Avoids distraction from concurrent timers |
 | Persistence | localStorage, 4 independent zones | tasks / taskBlocks / scheduleEntries / importantDays |
 | Data model | Task → Blocks → Schedules, 3-layer | Block is the atomic scheduling unit, enables splitting |
+| Data migration | Versioned + automatic pipeline | DATA_VERSION + MIGRATIONS registry, safe auto-upgrade on refresh |
+| Corruption guard | Backup raw text on parse failure | corrupted:<key> avoids silent data loss |
+| Quota monitoring | 5MB quota, 80% warning | Visual progress bar in Settings |
+| Theme color | CSS-variable-driven | All 115 brand-* classes follow without any component changes |
 
 ---
 

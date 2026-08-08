@@ -268,7 +268,7 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
 
       {/* 版本信息 */}
       <div className="pt-3 border-t border-brand-200/20 text-center">
-        <span className="text-xs text-ink-muted">Todo Calendar v0.7.0</span>
+        <span className="text-xs text-ink-muted">Todo Calendar v1.0.0</span>
       </div>
     </div>
   )

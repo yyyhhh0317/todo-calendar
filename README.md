@@ -22,7 +22,9 @@ A lightweight planner that fuses a classic TODO list with a time-table.
 
 ## 🎬 演示
 
-![视图演示](docs/demo1.gif)(docs/demo2.gif)
+![周视图演示](docs/screenshot-week.png)
+
+_周视图：拖拽任务块到时间格完成排期，重要日期高亮，未安排 / 已安排任务栏两区拆分_
 
 ## 这是什么？
 
@@ -40,13 +42,19 @@ Todo Calendar 不是又一个 TODO App，也不是又一个日历。它解决的
 | --- | --- |
 | **🧩 工作台布局** | 左侧 70% 排期画布 + 右侧 30% 任务侧栏，固定结构不跳动 |
 | **✂️ 任务拆分** | 把一个任务拆成多块，每块独立拖拽排期，灵活应对大任务 |
-| **🖱️ 拖拽排期** | 基于 `@dnd-kit` 实现任务块与周/月视图的双向拖拽 |
+| **🖱️ 拖拽排期** | 基于 `@dnd-kit` 实现任务块与周/月视图的双向拖拽 + 缩放旋转跟随动画 |
 | **🚫 冲突检测** | 30 分钟时间粒度，严格禁止重叠安排，冲突时给出友好提示 |
 | **📅 周 / 月视图** | 周视图时间网格精排，月视图日历概览粗排，双击日切到周 |
 | **🔥 极重要高亮** | 任务与日期支持「重要 / 极重要」两级标记，视觉分级区分 |
 | **⏰ 倒计时徽标** | 对有目标时间的任务显示「还剩 X 天 / X 小时」，到期自动标红 |
 | **🎯 专注计时** | 单计时器 + 迷你悬浮条 + 面板弹窗，支持正向计时与任务关联 |
-| **💾 本地持久化** | 全部数据保存在 localStorage，刷新不丢失，零后端依赖 |
+| **🎨 主题色自定义** | 6 个预设品牌色 + 自定义取色器，CSS 变量驱动全站跟随 |
+| **🌗 暗色主题** | 浅色 / 暗色 / 跟随系统三档，暗色下品牌色自动适配 |
+| **🔍 搜索 & 筛选** | 按关键词、状态、重要程度多维筛选任务 |
+| **⌨️ 键盘快捷键** | `S` 设置、`?` 帮助、`←/→` 切周等高效操作 |
+| **💾 数据导入导出** | JSON 备份跨设备迁移，dataVersion 自动兼容旧备份 |
+| **🛡️ 数据安全** | 自动迁移 + 容量监控 + 损坏保护，刷新升级也不丢数据 |
+| **☁️ 零后端依赖** | 全部数据保存在 localStorage，纯静态部署即可 |
 
 ---
 
@@ -57,9 +65,10 @@ Todo Calendar 不是又一个 TODO App，也不是又一个日历。它解决的
 | 构建 | Vite 5 + TypeScript 5 | 当下最主流的前端组合，开发体验和生态一流 |
 | UI 框架 | React 18 | 函数式 + Hooks，状态可预测 |
 | 样式 | Tailwind CSS 3 + 设计令牌 + 玻璃拟态 | 原子化 CSS，主题切换方便，视觉风格完全可控 |
-| 状态管理 | Zustand 4（3 个独立 store） | 比 Redux 轻量，API 直观，模块清晰 |
+| 状态管理 | Zustand 4（7 个独立 store） | 比 Redux 轻量，API 直观，模块清晰 |
 | 拖拽 | @dnd-kit/core | React 生态拖拽体验最佳，无障碍支持完善 |
 | 日期处理 | date-fns | 函数式、按需引入、体积可控 |
+| 测试 | Vitest + Playwright | 单测快、E2E 端到端覆盖全链路 |
 
 没有用任何 UI 组件库，所有视觉都是手写的。
 
@@ -95,8 +104,10 @@ npm run preview
 ### 可选脚本
 
 ```bash
-npm run lint    # 代码检查
-npm run test    # 单测（测试文件待补充）
+npm run lint         # ESLint 代码检查
+npm run test         # Vitest 单元测试（监听模式）
+npm run test:unit    # Vitest 单测跑一次
+npm run test:e2e     # Playwright E2E（需先 npx playwright install chromium）
 ```
 
 ---
@@ -134,43 +145,72 @@ npm run test    # 单测（测试文件待补充）
 ## 📁 项目结构
 
 ```
-src/
-├── app/
-│   └── App.tsx                     # 根组件：工作台布局 + DndProvider + 弹窗
-├── features/
-│   ├── drag/
-│   │   ├── DndProvider.tsx         # @dnd-kit 封装
-│   │   └── dragTypes.ts            # 拖拽 payload / target 类型
-│   ├── focus/
-│   │   ├── components/             # TimerPanel / MiniTimerBar / CountdownBadge / ImportanceToggle
-│   │   ├── useTicker.ts            # 计时器 tick hook
-│   │   └── focusUtils.ts           # 时间格式化工具
-│   ├── schedule/
-│   │   ├── components/             # TopBar / WeekView / MonthView / ScheduledTaskBlock
-│   │   ├── scheduleUtils.ts        # 冲突检测、endTime 计算
-│   │   └── scheduleTypes.ts        # ScheduleEntry / ImportantDay 类型
-│   └── tasks/
-│       ├── components/             # TaskSidebar / TaskComposer / TaskCard / TaskSplitEditor
-│       ├── taskUtils.ts            # 过滤 / 汇总逻辑
-│       └── taskTypes.ts            # Task / TaskBlock 类型
-├── shared/
-│   ├── components/                 # Button / SegmentedControl / Icons
-│   ├── styles/                     # globals.css + tokens.css（设计令牌）
-│   └── utils/                      # date / time / cn / id
-├── store/
-│   ├── useTaskStore.ts             # 任务 / 块 / 排期 / 重要日期 CRUD
-│   ├── useUIStore.ts               # 视图切换、日期导航
-│   ├── useTimerStore.ts            # 计时器状态
-│   └── persistence.ts              # localStorage 读写
-├── main.tsx
-└── index.css
+todo-calendar/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                    # GitHub Actions: lint + 单测 + build + E2E
+│       └── deploy.yml                # GitHub Pages 自动部署
+├── e2e/
+│   ├── helpers.ts                    # Playwright 公共 fixture（清 localStorage）
+│   └── workflow.spec.ts              # 全链路 E2E（创建→拆分→拖拽→完成→计时）
+├── docs/
+│   └── screenshot-*.png              # README 演示截图
+├── src/
+│   ├── app/
+│   │   └── App.tsx                   # 根组件：工作台布局 + DndProvider + 弹窗
+│   ├── features/
+│   │   ├── drag/
+│   │   │   ├── DndProvider.tsx       # @dnd-kit 封装（拖拽动画）
+│   │   │   └── dragTypes.ts          # 拖拽 payload / target 类型
+│   │   ├── focus/
+│   │   │   ├── components/           # TimerPanel / MiniTimerBar / CountdownBadge / ImportanceToggle
+│   │   │   ├── useTicker.ts          # 计时器 tick hook
+│   │   │   └── focusUtils.ts         # 时间格式化工具
+│   │   ├── schedule/
+│   │   │   ├── components/           # TopBar / WeekView / MonthView / ScheduledTaskBlock
+│   │   │   ├── scheduleUtils.ts      # 冲突检测、endTime 计算
+│   │   │   └── scheduleTypes.ts      # ScheduleEntry / ImportantDay 类型
+│   │   ├── settings/
+│   │   │   ├── components/           # SettingsPanel（主题/主题色/导入导出）
+│   │   │   ├── brandUtils.ts         # 色板生成算法
+│   │   │   ├── dataTransfer.ts       # 备份导入导出与版本兼容
+│   │   │   └── ...
+│   │   ├── stats/
+│   │   │   └── components/StatsPanel # 用时统计与完成率热力图
+│   │   └── tasks/
+│   │       ├── components/           # TaskSidebar / TaskComposer / TaskBlockCard / TaskSplitEditor
+│   │       ├── taskUtils.ts          # 过滤 / 汇总逻辑
+│   │       └── taskTypes.ts          # Task / TaskBlock 类型
+│   ├── shared/
+│   │   ├── components/               # Button / SegmentedControl / Icons / ShortcutsHelp
+│   │   ├── styles/                   # globals.css + tokens.css + dark-theme.css
+│   │   ├── hooks/                    # useKeyboard（快捷键）
+│   │   └── utils/                    # date / time / cn / id
+│   ├── store/
+│   │   ├── bootstrap.ts              # 启动引导（数据迁移先行）
+│   │   ├── migrations.ts             # v1→v2 迁移管线
+│   │   ├── persistence.ts            # localStorage 读写 + 容量监控 + 损坏保护
+│   │   ├── useTaskStore.ts           # 任务 / 块 / 排期 / 重要日期 CRUD
+│   │   ├── useUIStore.ts             # 视图切换、日期导航
+│   │   ├── useTimerStore.ts          # 计时器状态
+│   │   ├── useThemeStore.ts          # 浅色/暗色/跟随系统
+│   │   ├── useBrandStore.ts          # 主题色板持久化
+│   │   ├── useFilterStore.ts         # 搜索 & 筛选状态
+│   │   └── useSidebarSplitStore.ts   # 任务栏两区比例
+│   ├── main.tsx
+│   └── index.css
+├── playwright.config.ts
+├── vite.config.ts
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
 ```
 
 ---
 
 ## 🧠 设计决策速览
 
-| 问题 | 首版决策 | 备注 |
+| 问题 | 决策 | 备注 |
 | --- | --- | --- |
 | 时间粒度 | 30 分钟一格 | 8:00 – 22:00，每小时两格。15 分钟太碎，1 小时太粗 |
 | 排期冲突 | 严格禁止 | 拖放时 `detectConflicts` 检测并提示 |
@@ -178,6 +218,10 @@ src/
 | 计时器 | 全局单实例 | 避免多任务并发计时导致分心 |
 | 数据持久化 | localStorage 四区独立 | tasks / taskBlocks / scheduleEntries / importantDays |
 | 数据模型 | 任务 → 多块 → 多排期 三层分离 | 块是排期的最小单元，支持任务拆分 |
+| 数据迁移 | 版本化 + 自动管线 | DATA_VERSION + MIGRATIONS 注册表，刷新自动升级不丢数据 |
+| 损坏保护 | JSON 解析失败时备份原文 | corrupted:<key> 避免静默丢数据 |
+| 容量监控 | 5MB 配额、80% 告警 | 设置面板可视化进度条 |
+| 主题色 | CSS 变量驱动 | 全站 115 处 brand-* 类零改动自动跟随 |
 
 ---
 
