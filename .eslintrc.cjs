@@ -6,7 +6,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', '_shared'],
+  ignorePatterns: ['dist', '.eslintrc.cjs', '_shared', 'playwright-report', 'test-results'],
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],
   rules: {
@@ -19,4 +19,13 @@ module.exports = {
       { argsIgnorePattern: '^_' },
     ],
   },
+  overrides: [
+    // 测试文件（单测 / E2E / 配置文件）：不适用 react-refresh 组件导出规则
+    {
+      files: ['e2e/**', 'playwright.config.ts', 'src/**/*.test.ts'],
+      rules: {
+        'react-refresh/only-export-components': 'off',
+      },
+    },
+  ],
 }

@@ -29,6 +29,7 @@ export function MiniTimerBar({ onExpand }: MiniTimerBarProps) {
 
   return (
     <button
+      data-e2e-mini-timer
       onClick={onExpand}
       className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-glass border border-brand-200/50 shadow-card-hover hover:shadow-glass transition-all animate-slide-up group"
     >

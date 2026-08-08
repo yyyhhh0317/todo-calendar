@@ -198,12 +198,13 @@ Planning to deploy on Vercel. The link will be added here once deployed.
 - [x] Keyboard shortcuts — v0.4.0
 - [x] Task search & filter — v0.4.0
 - [x] Dark theme (light / dark / system) — v0.4.0
+- [x] Storage schema versioning + migration + quota monitoring (data safety) — v0.5.0
+- [x] Vitest unit test coverage (types / utils / store) — v0.6.0
+- [x] Playwright E2E: task creation → split → drag-schedule → complete → timer full flow — v0.6.0
+- [x] CI pipeline (lint + unit tests + build + E2E) — v0.6.0
 
 ### 🚧 Planned
 
-- [ ] Storage schema versioning + migration + quota monitoring (data safety)
-- [ ] Vitest unit test coverage (types / utils / store)
-- [ ] Playwright E2E: task creation → split → drag-schedule → complete → timer full flow
 - [ ] Theme color customization panel (current brand colors come from `tokens.css`)
 - [ ] Optional PWA + Service Worker for offline use
 - [ ] Optional cloud sync backend (Supabase / LAF / other BaaS)

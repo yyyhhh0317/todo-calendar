@@ -38,6 +38,7 @@ export function ScheduledTaskBlock({ entry, task, block }: ScheduledTaskBlockPro
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      data-e2e-placed-task
       className={`placed-task h-full flex flex-col justify-start overflow-hidden cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-50' : ''
       } ${isDone ? 'opacity-70' : ''} ${importanceClass}`}

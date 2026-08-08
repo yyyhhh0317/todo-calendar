@@ -55,6 +55,8 @@ function MonthDayCell({ date, isCurrentMonth, entries }: MonthDayCellProps) {
   return (
     <div
       ref={setNodeRef}
+      data-e2e-month-day
+      data-date={dayKey}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={`group relative flex flex-col min-h-[88px] p-1.5 border border-brand-200/15 cursor-pointer transition-colors ${

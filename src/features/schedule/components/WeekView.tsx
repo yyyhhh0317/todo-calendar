@@ -60,6 +60,9 @@ function DroppableSlot({ dayKey, slotIndex, children }: DroppableSlotProps) {
   return (
     <div
       ref={setNodeRef}
+      data-e2e-week-slot
+      data-date={dayKey}
+      data-slot={slotIndex}
       className={`relative border border-brand-200/20 transition-colors ${
         isOver ? 'bg-brand-100/60 border-brand-400' : 'bg-brand-50/20'
       }`}

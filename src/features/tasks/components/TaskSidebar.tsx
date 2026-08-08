@@ -7,6 +7,7 @@
  * - 计时器：已安排 / 未安排 均可启动
  */
 import { useCallback, useMemo, useRef } from 'react'
+import { useDroppable } from '@dnd-kit/core'
 import { useTaskStore } from '@/store/useTaskStore'
 import { useUIStore } from '@/store/useUIStore'
 import { useSidebarSplitStore } from '@/store/useSidebarSplitStore'
@@ -26,6 +27,22 @@ export function TaskSidebar() {
   const { unscheduledRatio, setUnscheduledRatio } = useSidebarSplitStore()
   const { keyword, status, importance } = useFilterStore()
 
+  // 容器引用：可变对象（分隔条拖拽边界计算 + droppable 合并）
+  const containerRef = useRef<HTMLElement>(null)
+
+  // 侧栏作为"拖回未安排"的放置目标：把已安排块拖回侧栏 = 取消排期
+  const { setNodeRef: setSidebarDropRef, isOver: isSidebarOver } = useDroppable({
+    id: 'sidebar',
+    data: { type: 'sidebar' },
+  })
+  // 合并容器 ref 与 droppable ref
+  const mergedSidebarRef = useCallback(
+    (node: HTMLElement | null) => {
+      (containerRef as React.MutableRefObject<HTMLElement | null>).current = node
+      setSidebarDropRef(node)
+    },
+    [setSidebarDropRef],
+  )
   const today = toDateKey(new Date())
 
   // 任务筛选匹配（搜索 + 状态 + 重要程度）
@@ -44,7 +61,6 @@ export function TaskSidebar() {
   }, [keyword, status, importance])
 
   // 用于分隔条拖拽的边界框计算
-  const containerRef = useRef<HTMLElement>(null)
   const draggingRef = useRef(false)
 
   const onDividerPointerDown = useCallback(
@@ -215,8 +231,12 @@ export function TaskSidebar() {
 
   return (
     <aside
-      ref={containerRef}
-      className="flex flex-col h-full min-w-0 overflow-hidden glass-panel rounded-4xl"
+      ref={mergedSidebarRef}
+      data-e2e-sidebar
+      className={cn(
+        'flex flex-col h-full min-w-0 overflow-hidden glass-panel rounded-4xl relative',
+        isSidebarOver && 'ring-2 ring-brand-400/60 ring-inset',
+      )}
     >
       {/* 选中日期标题 */}
       <div className="px-4 py-3 border-b border-brand-200/30 shrink-0">

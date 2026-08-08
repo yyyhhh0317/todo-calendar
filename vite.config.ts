@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
@@ -15,5 +15,10 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+  },
+  // Vitest 单测配置：只收集 src 下的 *.test.ts，E2E 由 Playwright 单独运行
+  test: {
+    include: ['src/**/*.test.ts'],
+    environment: 'node',
   },
 })
