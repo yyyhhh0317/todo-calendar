@@ -5,19 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 品牌主色 - 与 spec 中的设计令牌对齐
+        // 品牌主色 - CSS 变量驱动（tokens.css 定义），支持设置面板换肤
         brand: {
-          DEFAULT: '#6c5ce7',
-          50: '#f3f0ff',
-          100: '#e9e3ff',
-          200: '#d4c7ff',
-          300: '#b8a0ff',
-          400: '#9b78ff',
-          500: '#6c5ce7',
-          600: '#5b49d4',
-          700: '#4a39b8',
-          800: '#3b2d94',
-          900: '#2e2475',
+          DEFAULT: 'rgb(var(--brand-rgb) / <alpha-value>)',
+          50: 'rgb(var(--brand-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--brand-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--brand-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--brand-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--brand-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--brand-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--brand-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--brand-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--brand-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--brand-900-rgb) / <alpha-value>)',
         },
         accent: {
           DEFAULT: '#00b894',
@@ -73,12 +73,12 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        glass: '0 24px 80px rgba(108, 92, 231, 0.10)',
+        glass: '0 24px 80px rgba(var(--brand-rgb), 0.10)',
         card: '0 10px 28px rgba(23, 32, 51, 0.06)',
         'card-hover': '0 16px 40px rgba(23, 32, 51, 0.10)',
         important: '0 12px 30px rgba(255, 118, 117, 0.18)',
         starred: '0 12px 30px rgba(246, 185, 59, 0.16)',
-        task: '0 8px 18px rgba(108, 92, 231, 0.18)',
+        task: '0 8px 18px rgba(var(--brand-rgb), 0.18)',
       },
       borderRadius: {
         '4xl': '28px',
@@ -90,6 +90,7 @@ export default {
       animation: {
         'fade-in': 'fade-in 0.2s ease-out',
         'slide-up': 'slide-up 0.25s ease-out',
+        'drag-preview': 'drag-preview 0.18s ease-out',
       },
       keyframes: {
         'fade-in': {
@@ -99,6 +100,10 @@ export default {
         'slide-up': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'drag-preview': {
+          '0%': { opacity: '0.2', transform: 'scaleY(0.85)' },
+          '100%': { opacity: '1', transform: 'scaleY(1)' },
         },
       },
     },

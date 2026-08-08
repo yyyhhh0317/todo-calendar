@@ -23,6 +23,13 @@ interface DndProviderProps {
   renderDragOverlay?: (payload: DragBlockPayload | null) => ReactNode
 }
 
+/** 落位动画：轻微弹性 + 更自然的缓动 */
+const dropAnimation = {
+  ...defaultDropAnimation,
+  easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+  duration: 220,
+}
+
 export function DndProvider({ children, onDragEnd, renderDragOverlay }: DndProviderProps) {
   const [activePayload, setActivePayload] = useState<DragBlockPayload | null>(null)
 
@@ -58,7 +65,7 @@ export function DndProvider({ children, onDragEnd, renderDragOverlay }: DndProvi
       onDragCancel={handleDragCancel}
     >
       {children}
-      <DragOverlay dropAnimation={defaultDropAnimation}>
+      <DragOverlay dropAnimation={dropAnimation} className="drag-overlay">
         {renderDragOverlay?.(activePayload) ?? null}
       </DragOverlay>
     </DndContext>

@@ -15,6 +15,7 @@ import {
   MonitorIcon,
 } from '@/shared/components/Icons'
 import { useThemeStore, type ThemeMode } from '@/store/useThemeStore'
+import { useBrandStore, PRESET_BRANDS } from '@/store/useBrandStore'
 import { downloadBackup, validateImport, restoreBackup } from '../dataTransfer'
 import {
   estimateStorageUsage,
@@ -39,6 +40,7 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null)
   const { mode: themeMode, setMode: setThemeMode } = useThemeStore()
+  const { color: brandColor, setColor: setBrandColor, reset: resetBrand } = useBrandStore()
 
   // 存储健康状态（每次打开面板时计算）
   const storage = useMemo(() => estimateStorageUsage(), [])
@@ -115,6 +117,51 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
               {opt.label}
             </button>
           ))}
+        </div>
+
+        {/* 主题色自定义 */}
+        <div className="pt-1">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-medium text-ink-muted">主题色</span>
+            <button
+              onClick={resetBrand}
+              className="text-[10px] text-ink-muted/70 hover:text-brand-600 font-medium"
+              title="恢复默认紫罗兰"
+            >
+              重置
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {PRESET_BRANDS.map((preset) => (
+              <button
+                key={preset.color}
+                onClick={() => setBrandColor(preset.color)}
+                title={preset.name}
+                aria-label={`主题色 ${preset.name}`}
+                className={cn(
+                  'w-7 h-7 rounded-full border-2 transition-all',
+                  brandColor === preset.color
+                    ? 'border-ink ring-2 ring-brand-400 ring-offset-1'
+                    : 'border-white/60 hover:scale-110',
+                )}
+                style={{ backgroundColor: preset.color }}
+              />
+            ))}
+            <label
+              className="w-7 h-7 rounded-full border-2 border-dashed border-brand-300 flex items-center justify-center cursor-pointer hover:bg-brand-50 transition-colors"
+              title="自定义颜色"
+            >
+              <input
+                type="color"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="w-0 h-0 opacity-0 absolute"
+                aria-label="自定义主题色"
+              />
+              <span className="text-[10px] font-bold text-brand-500">+</span>
+            </label>
+          </div>
+          <div className="mt-1.5 text-[10px] text-ink-muted/60">浅色 / 暗色主题均跟随主题色</div>
         </div>
       </div>
 
@@ -221,7 +268,7 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
 
       {/* 版本信息 */}
       <div className="pt-3 border-t border-brand-200/20 text-center">
-        <span className="text-xs text-ink-muted">Todo Calendar v0.5.0</span>
+        <span className="text-xs text-ink-muted">Todo Calendar v0.7.0</span>
       </div>
     </div>
   )

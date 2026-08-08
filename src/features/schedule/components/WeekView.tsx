@@ -248,7 +248,7 @@ export function WeekView() {
                 {/* 拖拽吸附预览：半透明块显示任务将占据的时长 */}
                 {dragPreview && dragPreview.dayKey === dayKey && (
                   <div
-                    className="absolute left-0.5 right-0.5 pointer-events-none rounded-lg border-2 border-dashed border-brand-400 bg-brand-400/20 animate-fade-in"
+                    className="absolute left-0.5 right-0.5 pointer-events-none rounded-lg border-2 border-dashed border-brand-400 bg-brand-400/20 animate-drag-preview"
                     style={{
                       top: dragPreview.top + 1,
                       height: dragPreview.height - 2,
@@ -275,6 +275,16 @@ export function WeekView() {
           })}
         </div>
       </div>
+
+      {/* 无排期引导（仅当本周完全没有排期时显示） */}
+      {scheduleEntries.length === 0 && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 text-xs text-ink-muted bg-brand-50/50 border-t border-brand-200/20 animate-fade-in">
+          <span className="text-brand-500 font-medium">还没有排期</span>
+          <span className="text-ink-muted/70">
+            把右侧任务栏的块拖到这里即可安排时间
+          </span>
+        </div>
+      )}
 
       {/* 底部状态条 */}
       <div className="flex items-center justify-between px-3 py-1.5 text-[11px] text-ink-muted border-t border-brand-200/30 bg-white/30">

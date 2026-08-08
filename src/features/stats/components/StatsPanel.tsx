@@ -199,8 +199,12 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
 
       {/* 空状态 */}
       {summary.totalTasks === 0 && (
-        <div className="text-center py-6 text-sm text-ink-muted">
-          暂无数据，开始创建任务来跟踪你的时间吧
+        <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+          <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center mb-2">
+            <ChartIcon size={22} className="text-brand-300" />
+          </div>
+          <p className="text-xs text-ink-muted">暂无数据</p>
+          <p className="text-[11px] text-ink-muted/60 mt-0.5">开始创建任务来跟踪你的时间吧</p>
         </div>
       )}
     </div>

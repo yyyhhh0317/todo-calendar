@@ -1,6 +1,6 @@
 {
   "name": "todo-calendar",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "description": "精美 TODO 时间安排 Web 应用 - 把传统 TODO List 和时间表结合起来的轻量项目计划工具",
   "license": "MIT",

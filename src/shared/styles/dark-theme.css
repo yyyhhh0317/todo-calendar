@@ -6,7 +6,7 @@
 
 .dark {
   /* 覆盖设计令牌：规则线、RGB 高亮 */
-  --rule: rgba(155, 120, 255, 0.22);
+  --rule: rgba(var(--brand-400-rgb), 0.22);
   --danger-rgb: 255, 99, 132;
   --success-rgb: 54, 209, 168;
   --star-rgb: 253, 203, 110;
@@ -18,7 +18,7 @@
 .dark body {
   color: #e2e8f0;
   background:
-    radial-gradient(circle at 8% 8%, rgba(108, 92, 231, 0.22), transparent 30rem),
+    radial-gradient(circle at 8% 8%, rgba(var(--brand-rgb), 0.22), transparent 30rem),
     radial-gradient(circle at 92% 12%, rgba(0, 184, 148, 0.16), transparent 28rem),
     radial-gradient(circle at 42% 90%, rgba(253, 121, 168, 0.12), transparent 30rem),
     #0f1424;
@@ -37,7 +37,7 @@
 /* === 玻璃面板 === */
 .dark .glass-panel {
   background: rgba(30, 38, 62, 0.72);
-  border-color: rgba(155, 120, 255, 0.18);
+  border-color: rgba(var(--brand-400-rgb), 0.18);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
 }
 
@@ -68,30 +68,30 @@
 
 /* === 品牌浅色背景（bg-brand-50 等） === */
 .dark .bg-brand-50 {
-  background-color: rgba(108, 92, 231, 0.15) !important;
+  background-color: rgba(var(--brand-rgb), 0.15) !important;
 }
 
 .dark .bg-brand-100 {
-  background-color: rgba(108, 92, 231, 0.22) !important;
+  background-color: rgba(var(--brand-rgb), 0.22) !important;
 }
 
 /* === 边框颜色淡化 === */
 .dark .border-brand-200\/40 {
-  border-color: rgba(155, 120, 255, 0.18) !important;
+  border-color: rgba(var(--brand-400-rgb), 0.18) !important;
 }
 
 .dark .border-brand-200\/30 {
-  border-color: rgba(155, 120, 255, 0.15) !important;
+  border-color: rgba(var(--brand-400-rgb), 0.15) !important;
 }
 
 .dark .border-brand-200\/20 {
-  border-color: rgba(155, 120, 255, 0.12) !important;
+  border-color: rgba(var(--brand-400-rgb), 0.12) !important;
 }
 
 /* === 任务卡片 === */
 .dark .task-chip {
   background: rgba(30, 38, 62, 0.8);
-  border-color: rgba(155, 120, 255, 0.18);
+  border-color: rgba(var(--brand-400-rgb), 0.18);
 }
 
 .dark .task-chip.completed {
@@ -100,15 +100,15 @@
 
 /* === 滚动条 === */
 .dark .scrollbar-thin {
-  scrollbar-color: rgba(155, 120, 255, 0.4) transparent;
+  scrollbar-color: rgba(var(--brand-400-rgb), 0.4) transparent;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(155, 120, 255, 0.4);
+  background-color: rgba(var(--brand-400-rgb), 0.4);
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(155, 120, 255, 0.6);
+  background-color: rgba(var(--brand-400-rgb), 0.6);
 }
 
 /* === 弹窗遮罩 === */
@@ -125,5 +125,5 @@
 /* === 输入框聚焦环适配 === */
 .dark input:focus,
 .dark textarea:focus {
-  --tw-ring-color: rgba(155, 120, 255, 0.5);
+  --tw-ring-color: rgba(var(--brand-400-rgb), 0.5);
 }

@@ -202,10 +202,11 @@ Planning to deploy on Vercel. The link will be added here once deployed.
 - [x] Vitest unit test coverage (types / utils / store) — v0.6.0
 - [x] Playwright E2E: task creation → split → drag-schedule → complete → timer full flow — v0.6.0
 - [x] CI pipeline (lint + unit tests + build + E2E) — v0.6.0
+- [x] Theme color customization (preset palettes + custom picker, follows dark mode) — v0.7.0
+- [x] Drag feel animations (overlay scale, drop easing, snap preview transition) — v0.7.0
 
 ### 🚧 Planned
 
-- [ ] Theme color customization panel (current brand colors come from `tokens.css`)
 - [ ] Optional PWA + Service Worker for offline use
 - [ ] Optional cloud sync backend (Supabase / LAF / other BaaS)
 
