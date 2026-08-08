@@ -2,9 +2,10 @@
  * 周视图
  * 顶部列头固定周一到周日并显示日期
  * 左侧时间轴以 30 分钟为最小粒度，视觉上按 1 小时分隔
+ * 拖拽任务块时，悬停的时间格会显示跨多格的半透明吸附预览
  */
 import { useMemo } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { useDroppable, useDndContext } from '@dnd-kit/core'
 import {
   getWeekDays,
   formatDayHeader,
@@ -17,6 +18,7 @@ import { useUIStore } from '@/store/useUIStore'
 import { useTaskStore } from '@/store/useTaskStore'
 import { formatDuration, minutesToTimeString, timeStringToMinutes } from '@/shared/utils/time'
 import type { ScheduleEntry } from '../scheduleTypes'
+import type { DragBlockPayload, WeekDropTarget } from '@/features/drag/dragTypes'
 import { ScheduledTaskBlock } from './ScheduledTaskBlock'
 
 /** 时间格起始小时（8:00） */
@@ -86,6 +88,40 @@ export function WeekView() {
     }
     return map
   }, [scheduleEntries])
+
+  // === 拖拽吸附预览 ===
+  // 通过 useDndContext 获取当前拖拽的 active 和悬停的 over
+  const { active, over } = useDndContext()
+
+  // 计算拖拽预览信息：{ dayKey, slotIndex, height } | null
+  const dragPreview = useMemo(() => {
+    if (!active || !over) return null
+    // 仅处理任务块拖拽（id 以 'block-' 开头）
+    if (typeof active.id !== 'string' || !active.id.startsWith('block-')) return null
+    const payload = active.data.current as DragBlockPayload | undefined
+    if (!payload) return null
+    // 仅处理悬停在周视图时间格上
+    const target = over.data.current as WeekDropTarget | undefined
+    if (!target || target.type !== 'week-slot') return null
+
+    // 查找拖拽中的块，获取持续时间
+    const block = taskBlocks.find((b) => b.id === payload.blockId)
+    if (!block) return null
+
+    // 解析悬停目标的 slotIndex
+    // over.id 格式：'week-{dayKey}-{slotIndex}'
+    const overId = over.id as string
+    const parts = overId.split('-')
+    const slotIndex = Number(parts[parts.length - 1])
+    if (Number.isNaN(slotIndex)) return null
+
+    // 预览高度 = 持续时间对应的高度（与实际任务块一致）
+    const height = (block.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT
+    // 预览顶部偏移 = slotIndex 对应的 y 坐标
+    const top = slotIndex * SLOT_HEIGHT
+
+    return { dayKey: target.date, top, height }
+  }, [active, over, taskBlocks])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -205,6 +241,18 @@ export function WeekView() {
                     </DroppableSlot>
                   )
                 })}
+
+                {/* 拖拽吸附预览：半透明块显示任务将占据的时长 */}
+                {dragPreview && dragPreview.dayKey === dayKey && (
+                  <div
+                    className="absolute left-0.5 right-0.5 pointer-events-none rounded-lg border-2 border-dashed border-brand-400 bg-brand-400/20 animate-fade-in"
+                    style={{
+                      top: dragPreview.top + 1,
+                      height: dragPreview.height - 2,
+                      zIndex: 15,
+                    }}
+                  />
+                )}
 
                 {/* 今日高亮线 */}
                 {checkIsToday(day) && (
