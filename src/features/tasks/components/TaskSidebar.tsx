@@ -164,7 +164,7 @@ export function TaskSidebar() {
       taskMap: tMap,
       blockToEntry: entryByBlock,
     }
-  }, [tasks, taskBlocks, scheduleEntries, selectedDate, today, weekRange, hasFilter, matchesFilter])
+  }, [tasks, taskBlocks, scheduleEntries, selectedDate, today, weekRange, hasFilter, matchesFilter, status])
 
   const renderEmpty = (zone: 'unscheduled' | 'scheduled') => (
     <div className="flex flex-col items-center justify-center py-8 text-center px-4">

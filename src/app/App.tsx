@@ -29,33 +29,16 @@ interface Notice {
   type: 'error' | 'info' | 'success'
 }
 
-/** 旧数据兼容：为没有 totalMinutesSpent 的存量任务补齐默认值 */
-function migrateTasksMinuteField<T extends { totalMinutesSpent?: number }>(
-  tasks: T[],
-): T[] {
-  let changed = false
-  const next = tasks.map((t) => {
-    if ('totalMinutesSpent' in t) return t
-    changed = true
-    return { ...t, totalMinutesSpent: 0 }
-  })
-  return changed ? next : tasks
-}
+/** 旧数据兼容：为没有 totalMinutesSpent 的存量任务补齐默认值（已收编进 store/migrations 迁移管线） */
 
 export default function App() {
   const { scheduleBlock, removeScheduleEntry, scheduleEntries, tasks, taskBlocks, addMinutesSpent } =
     useTaskStore()
   useTicker()
 
-  // 初始化：1) 绑定计时器→任务用时的同步回调 2) 兼容老数据补齐 totalMinutesSpent
+  // 初始化：绑定计时器→任务用时的同步回调
   useEffect(() => {
     setMinutesSpentSync(addMinutesSpent)
-    // 老数据兼容：只在确实需要时写回
-    const state = useTaskStore.getState()
-    const migrated = migrateTasksMinuteField(state.tasks)
-    if (migrated !== state.tasks) {
-      useTaskStore.setState({ tasks: migrated })
-    }
   }, [addMinutesSpent])
 
   // 监听系统主题变化：当用户选择"跟随系统"时，自动同步

@@ -16,7 +16,7 @@ import {
 } from '@/shared/utils/date'
 import { useUIStore } from '@/store/useUIStore'
 import { useTaskStore } from '@/store/useTaskStore'
-import { formatDuration, minutesToTimeString, timeStringToMinutes } from '@/shared/utils/time'
+import { minutesToTimeString, timeStringToMinutes } from '@/shared/utils/time'
 import type { ScheduleEntry } from '../scheduleTypes'
 import type { DragBlockPayload, WeekDropTarget } from '@/features/drag/dragTypes'
 import { ScheduledTaskBlock } from './ScheduledTaskBlock'
@@ -283,6 +283,3 @@ export function WeekView() {
     </div>
   )
 }
-
-// 重新导出便于使用
-export { formatDuration }

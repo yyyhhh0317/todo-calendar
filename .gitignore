@@ -44,3 +44,6 @@ blog/
 
 # Internal dev notes (version goals & outcomes, only for dev process)
 dev-notes/
+
+# Local workspace memory (agent session notes, not for open-source release)
+.workbuddy/

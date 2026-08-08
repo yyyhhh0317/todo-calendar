@@ -19,7 +19,7 @@ import {
 import { zhCN } from 'date-fns/locale'
 
 /** 周一作为一周开始的配置 */
-export const WEEK_STARTS_ON: 1 = 1 // Monday
+export const WEEK_STARTS_ON = 1 as const // Monday
 
 /** 默认 locale */
 export const defaultLocale: Locale = zhCN

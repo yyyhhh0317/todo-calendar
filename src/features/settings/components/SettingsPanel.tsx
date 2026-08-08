@@ -2,7 +2,7 @@
  * 设置面板
  * 提供主题切换、数据导出、导入、统计回顾入口
  */
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { Button } from '@/shared/components/Button'
 import {
   SettingsIcon,
@@ -16,6 +16,12 @@ import {
 } from '@/shared/components/Icons'
 import { useThemeStore, type ThemeMode } from '@/store/useThemeStore'
 import { downloadBackup, validateImport, restoreBackup } from '../dataTransfer'
+import {
+  estimateStorageUsage,
+  STORAGE_WARN_RATIO,
+  getMigrationIssue,
+  getStorageIssue,
+} from '@/store/persistence'
 import { cn } from '@/shared/utils/cn'
 
 interface SettingsPanelProps {
@@ -33,6 +39,14 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' | 'info' } | null>(null)
   const { mode: themeMode, setMode: setThemeMode } = useThemeStore()
+
+  // 存储健康状态（每次打开面板时计算）
+  const storage = useMemo(() => estimateStorageUsage(), [])
+  const migrationIssue = useMemo(() => getMigrationIssue(), [])
+  const storageIssue = useMemo(() => getStorageIssue(), [])
+  const overWarn = storage.ratio >= STORAGE_WARN_RATIO
+  const usedMB = (storage.used / 1024 / 1024).toFixed(2)
+  const quotaMB = (storage.quota / 1024 / 1024).toFixed(0)
 
   const handleExport = () => {
     downloadBackup()
@@ -104,6 +118,42 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
         </div>
       </div>
 
+      {/* 数据安全 - 存储状态 */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">数据安全</h3>
+
+        {migrationIssue && (
+          <div className="px-3 py-2 rounded-lg bg-danger-50 border border-danger-200 text-xs text-danger-700">
+            数据迁移失败：{migrationIssue.message}
+          </div>
+        )}
+        {storageIssue && (
+          <div className="px-3 py-2 rounded-lg bg-danger-50 border border-danger-200 text-xs text-danger-700">
+            {storageIssue.message}
+          </div>
+        )}
+
+        <div className="px-3 py-2.5 rounded-xl bg-white/60 border border-brand-200/40">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="text-xs font-semibold text-ink">本地存储空间</div>
+            <div className={cn('text-xs font-medium', overWarn ? 'text-danger-700' : 'text-ink-muted')}>
+              {usedMB} MB / {quotaMB} MB
+            </div>
+          </div>
+          <div className="h-1.5 rounded-full bg-brand-100 overflow-hidden">
+            <div
+              className={cn('h-full rounded-full', overWarn ? 'bg-danger-500' : 'bg-brand-500')}
+              style={{ width: `${Math.min(100, storage.ratio * 100)}%` }}
+            />
+          </div>
+          {overWarn && (
+            <div className="mt-1.5 text-xs text-danger-700">
+              存储空间即将用完，建议立即导出备份并清理已完成任务
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 数据管理 */}
       <div className="space-y-2">
         <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">数据管理</h3>
@@ -171,7 +221,7 @@ export function SettingsPanel({ onClose, onOpenStats }: SettingsPanelProps) {
 
       {/* 版本信息 */}
       <div className="pt-3 border-t border-brand-200/20 text-center">
-        <span className="text-xs text-ink-muted">Todo Calendar v0.4.0</span>
+        <span className="text-xs text-ink-muted">Todo Calendar v0.5.0</span>
       </div>
     </div>
   )

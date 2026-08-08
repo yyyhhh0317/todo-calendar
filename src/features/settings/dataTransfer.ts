@@ -1,10 +1,18 @@
 ﻿/**
  * 数据导入导出
  * 基于 localStorage 实现全量 JSON 备份与恢复
+ * v0.5 升级：备份携带数据格式版本号，导入后由 bootstrap 迁移管线自动升级到最新
  */
-import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '@/store/persistence'
+import {
+  loadFromStorage,
+  saveToStorage,
+  STORAGE_KEYS,
+  readStorageMeta,
+  writeStorageMeta,
+  DATA_VERSION,
+} from '@/store/persistence'
 
-/** 备份格式版本 */
+/** 备份文件格式版本（与数据格式版本 dataVersion 相互独立） */
 const BACKUP_VERSION = 1
 
 /** 需要导出的持久化键名列表 */
@@ -20,7 +28,10 @@ const EXPORT_KEYS = [
 
 /** 备份数据结构 */
 export interface BackupData {
+  /** 备份文件格式版本 */
   version: number
+  /** 数据格式版本（决定导入后是否需要迁移） */
+  dataVersion: number
   exportedAt: string
   app: string
   data: Record<string, unknown>
@@ -39,6 +50,7 @@ export function collectBackupData(): BackupData {
   }
   return {
     version: BACKUP_VERSION,
+    dataVersion: readStorageMeta()?.dataVersion ?? 1,
     exportedAt: new Date().toISOString(),
     app: 'todo-calendar',
     data,
@@ -95,13 +107,24 @@ export function validateImport(raw: string): ValidationResult {
   if (typeof obj.data !== 'object' || obj.data === null) {
     return { ok: false, error: '备份数据内容缺失' }
   }
+  // 旧备份（v0.4 及更早）没有 dataVersion 字段，视为 v1 数据
+  const backup = obj as unknown as BackupData
+  if (typeof backup.dataVersion !== 'number') {
+    backup.dataVersion = 1
+  }
+  if (backup.dataVersion > DATA_VERSION) {
+    return {
+      ok: false,
+      error: `备份数据版本（v${backup.dataVersion}）高于当前应用支持（v${DATA_VERSION}），请升级应用后再导入`,
+    }
+  }
 
-  return { ok: true, data: obj as unknown as BackupData }
+  return { ok: true, data: backup }
 }
 
 /**
  * 从备份恢复数据（覆盖当前数据）
- * 写入 localStorage 后刷新页面以重置所有 store 状态
+ * 写入 localStorage 并记录数据版本，刷新后由 bootstrap 迁移管线自动升级到最新
  */
 export function restoreBackup(backup: BackupData): void {
   for (const key of EXPORT_KEYS) {
@@ -110,6 +133,8 @@ export function restoreBackup(backup: BackupData): void {
       saveToStorage(key, value)
     }
   }
+  // 写入导入数据的版本号，reload 后 ensureStorageMigrated 会自动迁移到 DATA_VERSION
+  writeStorageMeta({ dataVersion: backup.dataVersion ?? 1 })
   // 刷新页面，让所有 store 从 localStorage 重新初始化
   window.location.reload()
 }
