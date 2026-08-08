@@ -191,10 +191,19 @@ Planning to deploy on Vercel. The link will be added here once deployed.
 
 ## 🛣 Roadmap
 
+### ✅ Done
+
+- [x] Data import / export (JSON) for cross-device migration — v0.3.0
+- [x] Visual snap preview to 30-min boundaries when dragging in week view — v0.4.0
+- [x] Keyboard shortcuts — v0.4.0
+- [x] Task search & filter — v0.4.0
+- [x] Dark theme (light / dark / system) — v0.4.0
+
+### 🚧 Planned
+
+- [ ] Storage schema versioning + migration + quota monitoring (data safety)
 - [ ] Vitest unit test coverage (types / utils / store)
 - [ ] Playwright E2E: task creation → split → drag-schedule → complete → timer full flow
-- [ ] Visual snap preview to 30-min boundaries when dragging in week view
-- [ ] Data import / export (JSON) for cross-device migration
 - [ ] Theme color customization panel (current brand colors come from `tokens.css`)
 - [ ] Optional PWA + Service Worker for offline use
 - [ ] Optional cloud sync backend (Supabase / LAF / other BaaS)
